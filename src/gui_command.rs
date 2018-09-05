@@ -1,88 +1,14 @@
 use std::fmt;
 use std::str::FromStr;
 use error::Error;
-use nom::{rest, digit};
-use chess::{ChessMove, Square, Piece, Rank, File, Board};
+use nom::rest;
+use chess::{ChessMove, Board};
 
-#[derive(Debug, PartialEq, PartialOrd, Clone, Default)]
-pub struct Go {
-    search_moves: Vec<ChessMove>,
-    ponder: Option<ChessMove>,
-    wtime: Option<u64>,
-    btime: Option<u64>,
-    winc: Option<u64>,
-    binc: Option<u64>,
-    movestogo: Option<u64>,
-    depth: Option<u64>,
-    nodes: Option<u64>,
-    mate: Option<u64>,
-    movetime: Option<u64>,
-    infinite: bool
-}
+#[cfg(test)]
+use chess::{Rank, File, Piece, Square};
 
-macro_rules! set_non_default {
-    ($result:ident, $a:ident, $b:ident, $val:ident) => {
-        if $result.$val == $b.$val {
-            $result.$val = $a.$val.clone();
-        } else {
-            $result.$val = $b.$val.clone();
-        }
-    }
-}
-
-macro_rules! add_builder {
-    ($name:ident, $type:ty) => {
-        pub fn $name(a: $type) -> Go {
-            let mut result = Go::default();
-            result.$name = a.clone();
-            result
-        }
-    }
-}
-
-macro_rules! add_builder_option {
-    ($name:ident, $type:ty) => {
-        pub fn $name(a: $type) -> Go {
-            let mut result = Go::default();
-            result.$name = Some(a.clone());
-            result
-        }
-    }
-}
-
-impl Go {
-    add_builder!(search_moves, Vec<ChessMove>);
-    add_builder_option!(ponder, ChessMove);
-    add_builder_option!(wtime, u64);
-    add_builder_option!(btime, u64);
-    add_builder_option!(winc, u64);
-    add_builder_option!(binc, u64);
-    add_builder_option!(movestogo, u64);
-    add_builder_option!(depth, u64);
-    add_builder_option!(nodes, u64);
-    add_builder_option!(mate, u64);
-    add_builder_option!(movetime, u64);
-    add_builder!(infinite, bool);
-
-    pub fn combine(&self, b: &Go) -> Go {
-        let mut result = Go::default();
-
-        set_non_default!(result, self, b, search_moves);
-        set_non_default!(result, self, b, ponder);
-        set_non_default!(result, self, b, wtime);
-        set_non_default!(result, self, b, btime);
-        set_non_default!(result, self, b, winc);
-        set_non_default!(result, self, b, binc);
-        set_non_default!(result, self, b, movestogo);
-        set_non_default!(result, self, b, depth);
-        set_non_default!(result, self, b, nodes);
-        set_non_default!(result, self, b, mate);
-        set_non_default!(result, self, b, movetime);
-        set_non_default!(result, self, b, infinite);
-
-        result
-    }
-}
+use parsers::*;
+use go::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum GuiCommand {
@@ -99,97 +25,9 @@ pub enum GuiCommand {
     Quit
 }
 
-named!(parse_rank<&str, Rank>, do_parse!(
-        r: alt!(
-            value!(Rank::First, tag!("1")) |
-            value!(Rank::Second, tag!("2")) |
-            value!(Rank::Third, tag!("3")) |
-            value!(Rank::Fourth, tag!("4")) |
-            value!(Rank::Fifth, tag!("5")) |
-            value!(Rank::Sixth, tag!("6")) |
-            value!(Rank::Seventh, tag!("7")) |
-            value!(Rank::Eighth, tag!("8"))
-        ) >>
-        (r)
-    )
-);
-
-named!(parse_file<&str, File>, do_parse!(
-        f: alt!(
-            value!(File::A, tag!("a")) |
-            value!(File::B, tag!("b")) |
-            value!(File::C, tag!("c")) |
-            value!(File::D, tag!("d")) |
-            value!(File::E, tag!("e")) |
-            value!(File::F, tag!("f")) |
-            value!(File::G, tag!("g")) |
-            value!(File::H, tag!("h"))
-        ) >>
-        (f)
-    )
-);
-
-named!(parse_square<&str, Square>, do_parse!(
-        f: parse_file >>
-        r: parse_rank >>
-        (Square::make_square(r, f))
-    )
-);
-
-named!(parse_promotion_piece<&str, Option<Piece>>, do_parse!(
-        p: opt!(alt_complete!(
-            value!(Piece::Knight, tag!("n")) |
-            value!(Piece::Bishop, tag!("b")) |
-            value!(Piece::Rook, tag!("r")) |
-            value!(Piece::Queen, tag!("q"))
-        )) >>
-        (p)
-    )
-);
-
-named!(parse_move<&str, ChessMove>, do_parse!(
-        s1: parse_square >>
-        s2: parse_square >>
-        promotion: parse_promotion_piece >>
-        (ChessMove::new(s1, s2, promotion))
-    )
-);
-
-named!(space<&str, &str>, eat_separator!(" \t\r\n"));
-
 named!(parse_uci<&str, GuiCommand>, do_parse!(
         tag!("uci") >>
         (GuiCommand::Uci)
-    )
-);
-
-named!(parse_fen<&str, Board>, do_parse!(
-        x: do_parse!(
-            board: take_while_s!(|y| "pPnNbBrRqQkK12345678/".contains(y)) >>
-            space >>
-            player: alt!(tag!("w") | tag!("b")) >>
-            space >>
-            castle: take_while_s!(|y| "-kKqQ".contains(y)) >>
-            space >>
-            ep: take_while_s!(|y| "abcdefgh12345678-".contains(y)) >>
-            space >>
-            m1: take_while_s!(|y| "0123456789".contains(y)) >>
-            space >>
-            m2: take_while_s!(|y| "0123456789".contains(y)) >>
-            board: expr_opt!(Board::from_fen(board.to_owned() +
-                                             " " +
-                                             player +
-                                             " " +
-                                             castle +
-                                             " " +
-                                             ep +
-                                             " " +
-                                             m1 +
-                                             " " +
-                                             m2)) >>
-            (board)
-        ) >>
-        (x)
     )
 );
 
@@ -261,133 +99,6 @@ named!(parse_quit<&str, GuiCommand>, do_parse!(
     )
 );
 
-named!(
-    integer<&str, u64>,
-    map_res!(
-        digit,
-        u64::from_str
-    )
-);
-
-named!(parse_go_wtime<&str, Go>, do_parse!(
-        space >>
-        tag!("wtime") >>
-        space >>
-        val: integer >>
-        (Go::wtime(val))
-    )
-);
-
-named!(parse_go_btime<&str, Go>, do_parse!(
-        space >>
-        tag!("btime") >>
-        space >>
-        val: integer >>
-        (Go::btime(val))
-    )
-);
-
-named!(parse_go_winc<&str, Go>, do_parse!(
-        space >>
-        tag!("winc") >>
-        space >>
-        val: integer >>
-        (Go::winc(val))
-    )
-);
-
-named!(parse_go_binc<&str, Go>, do_parse!(
-        space >>
-        tag!("binc") >>
-        space >>
-        val: integer >>
-        (Go::binc(val))
-    )
-);
-
-named!(parse_go_movestogo<&str, Go>, do_parse!(
-        space >>
-        tag!("movestogo") >>
-        space >>
-        val: integer >>
-        (Go::movestogo(val))
-    )
-);
-
-named!(parse_go_depth<&str, Go>, do_parse!(
-        space >>
-        tag!("depth") >>
-        space >>
-        val: integer >>
-        (Go::depth(val))
-    )
-);
-
-named!(parse_go_nodes<&str, Go>, do_parse!(
-        space >>
-        tag!("nodes") >>
-        space >>
-        val: integer >>
-        (Go::nodes(val))
-    )
-);
-
-named!(parse_go_mate<&str, Go>, do_parse!(
-        space >>
-        tag!("mate") >>
-        space >>
-        val: integer >>
-        (Go::mate(val))
-    )
-);
-
-named!(parse_go_movetime<&str, Go>, do_parse!(
-        space >>
-        tag!("movetime") >>
-        space >>
-        val: integer >>
-        (Go::movetime(val))
-    )
-);
-
-named!(parse_go_infinite<&str, Go>, do_parse!(
-        space >>
-        tag!("infinite") >>
-        (Go::infinite(true))
-    )
-);
-
-named!(parse_go_ponder<&str, Go>, do_parse!(
-        space >>
-        tag!("ponder") >>
-        space >>
-        m: parse_move >>
-        (Go::ponder(m))
-    )
-);
-
-named!(parse_movelist<&str, Vec<ChessMove> >, do_parse!(
-        moves: fold_many1!(
-            parse_move,
-            Vec::new(),
-            |mut acc: Vec<ChessMove>, item: ChessMove| {
-                acc.push(item);
-                acc
-            }
-        ) >>
-        (moves.to_vec())
-    )
-);
-
-named!(parse_go_searchmoves<&str, Go>, do_parse!(
-        space >>
-        tag!("searchmoves") >>
-        space >>
-        moves: parse_movelist >>
-        (Go::search_moves(moves.to_vec()))
-    )
-);
-
 named!(parse_go<&str, GuiCommand>, do_parse!(
         tag!("go") >>
         go: fold_many1!(
@@ -426,6 +137,7 @@ named!(parse_position_startpos<&str, Board>, do_parse!(
 );
 
 named!(parse_position_moves<&str, Vec<ChessMove>>, do_parse!(
+        space >>
         tag!("moves") >>
         space >>
         moves: parse_movelist >>
@@ -434,7 +146,8 @@ named!(parse_position_moves<&str, Vec<ChessMove>>, do_parse!(
 );
 
 named!(parse_position_moves_empty<&str, Vec<ChessMove>>, do_parse!(
-        eof!() >>
+        non_newline_space >>
+        tag!("\n") >>
         (Vec::new())
     )
 );
@@ -444,7 +157,7 @@ named!(parse_position<&str, GuiCommand>, do_parse!(
         space >>
         board: alt_complete!(parse_position_fen | parse_position_startpos) >>
         moves: alt_complete!(parse_position_moves | parse_position_moves_empty) >>
-        (GuiCommand::Position(board, moves)) 
+        (GuiCommand::Position(board, moves))
     )
 );
 
@@ -471,41 +184,6 @@ impl FromStr for GuiCommand {
         Ok(parse_all(s)?.1)
     }
 }
-
-#[cfg(test)]
-fn test_parse(s: &str, c: GuiCommand) {
-    let parsed = GuiCommand::from_str(s);
-    assert_eq!(parsed, Ok(c));
-}
-
-#[test]
-fn test_parse_gui() {
-    test_parse("uci", GuiCommand::Uci);
-
-    test_parse("debug on", GuiCommand::Debug(true));
-
-    test_parse("debug off" , GuiCommand::Debug(false));
-
-    test_parse("setoption name test", GuiCommand::SetOption("test".to_string(), None));
-    
-    test_parse("setoption name test value value",
-               GuiCommand::SetOption("test".to_string(), Some("value".to_string())));
-    
-    test_parse("isready", GuiCommand::IsReady);
-
-    test_parse("register code", GuiCommand::Register("code".to_string()));
-
-    test_parse("ucinewgame", GuiCommand::UciNewGame);
-   
-    test_parse("stop", GuiCommand::Stop);
-
-    test_parse("ponderhit", GuiCommand::PonderHit);
-
-    test_parse("quit", GuiCommand::Quit);
-
-    test_parse("go btime 100 wtime 100\n", GuiCommand::Go(Go::wtime(100).combine(&Go::btime(100))));
-}
-
 impl fmt::Display for GuiCommand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -579,5 +257,117 @@ impl fmt::Display for GuiCommand {
             GuiCommand::Quit => writeln!(f, "quit")
         }
     }
+}
+
+#[cfg(test)]
+fn test_parse(s: &str, c: GuiCommand) {
+    let parsed = GuiCommand::from_str(s);
+    assert_eq!(parsed, Ok(c));
+}
+
+#[test]
+fn test_parse_gui() {
+    test_parse("uci", GuiCommand::Uci);
+}
+
+#[test]
+fn test_parse_debug_on() {
+    test_parse("debug on", GuiCommand::Debug(true));
+}
+
+#[test]
+fn test_parse_debug_off() {
+    test_parse("debug off" , GuiCommand::Debug(false));
+}
+
+#[test]
+fn test_parse_setoption_noval() {
+    test_parse("setoption name test",
+               GuiCommand::SetOption("test".to_string(), None));
+}
+
+#[test]
+fn test_parse_setoption_withval() {
+    test_parse("setoption name test value value",
+               GuiCommand::SetOption("test".to_string(),
+                                     Some("value".to_string())));
+}
+
+#[test]
+fn test_isready() {
+    test_parse("isready", GuiCommand::IsReady);
+}
+
+#[test]
+fn test_registration() {
+    test_parse("register code", GuiCommand::Register("code".to_string()));
+}
+
+#[test]
+fn test_ucinewgame() {
+    test_parse("ucinewgame", GuiCommand::UciNewGame);
+}
+
+#[test]
+fn test_stop() {
+    test_parse("stop", GuiCommand::Stop);
+}
+
+#[test]
+fn test_ponderhit() {
+    test_parse("ponderhit", GuiCommand::PonderHit);
+}
+
+#[test]
+fn test_quit() {
+    test_parse("quit", GuiCommand::Quit);
+}
+
+#[test]
+fn test_parse_go_times() {
+    test_parse("go btime 100 wtime 100\n",
+               GuiCommand::Go(Go::wtime(100).combine(
+                             &Go::btime(100))));
+}
+
+#[test]
+fn test_parse_startpos() {
+    test_parse("position startpos\n",
+               GuiCommand::Position(Board::default(), vec!()));
+}
+#[test]
+fn test_parse_startpos_moves() {
+    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
+                              Square::make_square(Rank::Fourth, File::E), None);
+    let e7e5 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
+                              Square::make_square(Rank::Fifth, File::E), None);
+
+    test_parse("position startpos moves e2e4 e7e5\n",
+               GuiCommand::Position(Board::default(), vec!(e2e4, e7e5)));
+}
+
+#[test]
+fn test_position_fen() {
+    test_parse("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\n", GuiCommand::Position(Board::default(), vec!()));
+}
+
+#[test]
+fn test_parse_position_fen_moves() {
+    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
+                              Square::make_square(Rank::Fourth, File::E), None);
+    let e7e5 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
+                              Square::make_square(Rank::Fifth, File::E), None);
+
+    test_parse("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4 e7e5\n",
+               GuiCommand::Position(Board::default(), vec!(e2e4, e7e5)));
+}
+
+#[test]
+fn test_parse_queening_move() {
+    let queening = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
+                                  Square::make_square(Rank::Eighth, File::E),
+                                  Some(Piece::Queen));
+
+    test_parse("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e7e8q\n", GuiCommand::Position(Board::default(), vec!(queening)));
 }
 
