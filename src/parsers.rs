@@ -109,6 +109,21 @@ named!(
         u64::from_str
     )
 );
+
+named!(
+    pub parse_i64<&str, i64>,
+    map_res!(
+        recognize!(
+            do_parse!(
+                opt!(tag!("-")) >>
+                digit >>
+                ()
+            )
+        ),
+        |s: &str| s.parse::<i64>()
+    )
+);
+
 named!(pub parse_movelist<&str, Vec<ChessMove> >, do_parse!(
         moves: fold_many1!(
             alt_complete!(parse_move_space | parse_move),

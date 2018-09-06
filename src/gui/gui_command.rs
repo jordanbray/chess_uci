@@ -8,7 +8,7 @@ use chess::{ChessMove, Board};
 use chess::{Rank, File, Piece, Square};
 
 use parsers::*;
-use go::*;
+use gui::go::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum GuiCommand {
@@ -184,6 +184,7 @@ impl FromStr for GuiCommand {
         Ok(parse_all(s)?.1)
     }
 }
+
 impl fmt::Display for GuiCommand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
