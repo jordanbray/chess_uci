@@ -15,7 +15,7 @@ pub struct BestMove {
 }
 
 impl BestMove {
-    fn new(m: ChessMove) -> BestMove {
+    pub fn new(m: ChessMove) -> BestMove {
         BestMove {
             chess_move: m,
             ponder_move: None
@@ -50,7 +50,7 @@ named!(parse_best_move_ponder<&str, BestMove>, do_parse!(
     )
 );
 
-named!(parse_best_move<&str, BestMove>, do_parse!(
+named!(pub parse_best_move<&str, BestMove>, do_parse!(
         val: alt_complete!(parse_best_move_ponder | parse_best_move_noponder) >>
         (val)
     )

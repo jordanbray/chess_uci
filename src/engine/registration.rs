@@ -11,7 +11,7 @@ pub enum Registration {
     Error
 }
 
-named!(parse_registration<&str, Registration>, do_parse!(
+named!(pub parse_registration<&str, Registration>, do_parse!(
         tag!("registration") >>
         space >>
         val: alt_complete!(

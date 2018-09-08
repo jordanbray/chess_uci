@@ -199,7 +199,7 @@ named!(parse_info_tb_hits<&str, Info>, do_parse!(
 );
 
 
-named!(parse_info<&str, Info>, do_parse!(
+named!(pub parse_info<&str, Info>, do_parse!(
         tag!("info") >>
         info: fold_many1!(
             alt_complete!(parse_info_pv |

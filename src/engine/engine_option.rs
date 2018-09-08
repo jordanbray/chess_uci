@@ -11,7 +11,7 @@ pub struct EngineOption {
     option_type: OptionType
 }
 
-named!(parse_engine_option<&str, EngineOption>, do_parse!(
+named!(pub parse_engine_option<&str, EngineOption>, do_parse!(
         tag!("option") >>
         space >>
         tag!("name") >>
@@ -21,6 +21,23 @@ named!(parse_engine_option<&str, EngineOption>, do_parse!(
         (EngineOption { name: name.trim().to_string(), option_type: option_type })
     )
 );
+
+impl EngineOption {
+    pub fn new(name: String, option_type: OptionType) -> EngineOption {
+        EngineOption {
+            name: name,
+            option_type: option_type
+        }
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn get_option_type(&self) -> &OptionType {
+        &self.option_type
+    }
+}
 
 impl FromStr for EngineOption {
     type Err = Error;

@@ -1,5 +1,5 @@
 pub mod best_move;
-/*pub mod engine_command; */
+pub mod engine_command;
 pub mod id;
 pub mod info;
 pub mod engine_option;

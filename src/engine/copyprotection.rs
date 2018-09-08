@@ -11,7 +11,7 @@ pub enum CopyProtection {
     Error
 }
 
-named!(parse_copyprotection<&str, CopyProtection>, do_parse!(
+named!(pub parse_copyprotection<&str, CopyProtection>, do_parse!(
         tag!("copyprotection") >>
         space >>
         val: alt_complete!(

@@ -37,7 +37,7 @@ named!(parse_engine_id_name<&str, Id>, do_parse!(
     )
 );
 
-named!(pub parse_engine_id_author<&str, Id>, do_parse!(
+named!(parse_engine_id_author<&str, Id>, do_parse!(
         tag!("id") >>
         space >>
         tag!("author") >>
