@@ -29,6 +29,72 @@ pub struct Info {
     cur_line: Vec<ChessMove>,
 }
 
+impl Info {
+    pub fn get_depth(&self) -> Option<u64> {
+        self.depth
+    }
+
+    pub fn get_seldepth(&self) -> Option<u64> {
+        self.seldepth
+    }
+
+    pub fn get_time(&self) -> Option<u64> {
+        self.time
+    }
+
+    pub fn get_nodes(&self) -> Option<u64> {
+        self.nodes
+    }
+
+    pub fn get_pv(&self) -> &Vec<ChessMove> {
+        &self.pv
+    }
+
+    pub fn get_multi_pv(&self) -> Option<u64> {
+        self.multi_pv
+    }
+
+    pub fn get_score(&self) -> Option<Score> {
+        self.score
+    }
+
+    pub fn cur_get_move(&self) -> Option<ChessMove> {
+        self.cur_move
+    }
+
+    pub fn get_cur_move_number(&self) -> Option<u64> {
+        self.cur_move_number
+    }
+
+    pub fn get_hash_full(&self) -> Option<f32> {
+        self.hash_full
+    }
+
+    pub fn get_nps(&self) -> Option<u64> {
+        self.nps
+    }
+
+    pub fn get_tbhits(&self) -> Option<u64> {
+        self.tb_hits
+    }
+
+    pub fn get_cpu_load(&self) -> Option<f32> {
+        self.cpu_load
+    }
+
+    pub fn get_engine_string(&self) -> &Option<String> {
+        &self.engine_string
+    }
+
+    pub fn get_refutation(&self) -> &Vec<ChessMove> {
+        &self.refutation
+    }
+
+    pub fn get_cur_line(&self) -> &Vec<ChessMove> {
+        &self.cur_line
+    }
+}
+
 macro_rules! set_non_default {
     ($result:ident, $a:ident, $b:ident, $val:ident) => {
         if $result.$val == $b.$val {

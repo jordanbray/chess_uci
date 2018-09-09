@@ -17,6 +17,56 @@ pub struct Go {
     pub infinite: bool
 }
 
+impl Go {
+    pub fn get_search_moves(&self) -> &Vec<ChessMove> {
+        &self.search_moves
+    }
+
+    pub fn get_ponder(&self) -> Option<ChessMove> {
+        self.ponder
+    }
+
+    pub fn get_wtime(&self) -> Option<u64> {
+        self.wtime
+    }
+
+    pub fn get_btime(&self) -> Option<u64> {
+        self.btime
+    }
+
+    pub fn get_winc(&self) -> Option<u64> {
+        self.winc
+    }
+
+    pub fn get_binc(&self) -> Option<u64> {
+        self.binc
+    }
+
+    pub fn get_movestogo(&self) -> Option<u64> {
+        self.movestogo
+    }
+
+    pub fn get_depth(&self) -> Option<u64> {
+        self.depth
+    }
+
+    pub fn get_nodes(&self) -> Option<u64> {
+        self.nodes
+    }
+
+    pub fn get_mate(&self) -> Option<u64> {
+        self.mate
+    }
+
+    pub fn get_movetime(&self) -> Option<u64> {
+        self.movetime
+    }
+
+    pub fn get_infinite(&self) -> bool {
+        self.infinite
+    }
+}
+
 macro_rules! set_non_default {
     ($result:ident, $a:ident, $b:ident, $val:ident) => {
         if $result.$val == $b.$val {
