@@ -10,8 +10,8 @@ use chess::{Square, Rank, File};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default)]
 pub struct BestMove {
-    pub chess_move: ChessMove,
-    pub ponder_move: Option<ChessMove>,
+    chess_move: ChessMove,
+    ponder_move: Option<ChessMove>,
 }
 
 impl BestMove {
@@ -22,11 +22,19 @@ impl BestMove {
         }
     }
 
-    fn new_with_ponder(m: ChessMove, ponder: ChessMove) -> BestMove {
+    pub fn new_with_ponder(m: ChessMove, ponder: ChessMove) -> BestMove {
         BestMove {
             chess_move: m,
             ponder_move: Some(ponder)
         }
+    }
+
+    pub fn get_move(&self) -> ChessMove {
+        self.chess_move
+    }
+
+    pub fn get_ponder(&self) -> Option<ChessMove> {
+        self.ponder_move
     }
 }
 
