@@ -1,102 +1,63 @@
-use std;
-use command::Command;
-use timer::timer::Timer;
+use std::io::{BufRead, BufReader, Write};
+use std::process::{ChildStdin, Stdio, self};
+use std::str::FromStr;
+use std::time::{Duration, Instant};
+use std::sync::mpsc::{Receiver, sync_channel, TryRecvError};
+use std::thread::{sleep, spawn};
+
 use chess::{Board, ChessMove};
+
+use command::Command;
 use error::Error;
-use std::io::{BufRead, BufReader};
-use std::process::{ChildStdin, Stdio};
+use engine::best_move::BestMove;
 use engine::engine_command::EngineCommand;
 use gui::gui_command::GuiCommand;
 use gui::go::Go;
-use std::io::Write;
-use std::str::FromStr;
-use std::time::{Duration, Instant};
-use engine::best_move::BestMove;
-use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::thread::JoinHandle;
+use timer::timer::Timer;
 
 pub struct EngineConnection {
     commands: Vec<Command>,
     stdin: ChildStdin,
-    reader_thread: JoinHandle<()>,
     receiver: Receiver<Command>,
     timer: Option<Timer>,
-    board: Option<Board>,
-    moves: Vec<ChessMove>,
     last_received_index: usize,
 }
 
 impl EngineConnection {
     pub fn new(path: &str) -> Result<EngineConnection, Error> {
-        let process = match std::process::Command::new(path)
-                                                  .stdin(Stdio::piped())
-                                                  .stdout(Stdio::piped())
-                                                  .spawn() {
-            Err(_) => return Err(Error::SpawnError),
-            Ok(process) => process
-        };
+        let process = process::Command::new(path)
+                                            .stdin(Stdio::piped())
+                                            .stdout(Stdio::piped())
+                                            .spawn()?;
 
-        let (tx, rx) = mpsc::sync_channel(1024);
+        let (tx, rx) = sync_channel(1024);
 
-        let stopping = Arc::new(AtomicBool::new(false));
-        let stdout = process.stdout.unwrap();
-        let thread_tx = tx.clone();
+        let mut reader = BufReader::new(process.stdout.unwrap());
 
-        let reader_thread = std::thread::spawn(move || {
-            let mut reader = BufReader::new(stdout);
-            while !stopping.load(Ordering::SeqCst) {
-                let mut s = String::new();
-                match reader.read_line(&mut s) {
-                    Err(_) => stopping.store(true, Ordering::SeqCst),
-                    Ok(_) => {
-                        match Command::from_str(&s) {
-                            Ok(command) => {
-                                match thread_tx.send(command.clone()) {
-                                    Err(e) => {
-                                        println!("Error sending: {}", e);
-                                        panic!();
-                                    },
-                                    _ => {}
-                                }
-                            },
-                            Err(_) => {
-                                stopping.store(true, Ordering::SeqCst);
-                            }
-                        }
+        spawn(move || {
+            let mut s = String::new();
+            while let Ok(_) = reader.read_line(&mut s) {
+                if let Ok(command) = Command::from_str(&s) {
+                    if let Err(_) = tx.send(command.clone()) {
+                        break;
                     }
-                };
+                } else {
+                    break;
+                }
+                s = String::new();
             }
         });
 
         let mut ec = EngineConnection {
             stdin: process.stdin.unwrap(),
-            reader_thread: reader_thread,
             commands: vec!(),
             receiver: rx,
             timer: None,
-            board: None,
-            moves: vec!(),
             last_received_index: 0,
         };
 
-        match ec.send_uci() {
-            Err(x) => {
-                println!("Error sending UCI {}", x);
-                return Err(x);
-            },
-            Ok(()) => {}
-        };
-
-        match ec.send_isready() {
-            Err(x) => {
-                println!("Error sending isready {}", x);
-                return Err(x);
-            },
-            Ok(()) => {}
-        }
+        ec.send_uci()?;
+        ec.send_isready()?;
 
         Ok(ec)
     }
@@ -108,8 +69,6 @@ impl EngineConnection {
     pub fn send_position(&mut self,
                          position: Board,
                          moves: Vec<ChessMove>) -> Result<(), Error> {
-        self.board = Some(position);
-        self.moves = moves.clone();
         self.send(GuiCommand::Position(position, moves))
     }
 
@@ -127,36 +86,26 @@ impl EngineConnection {
     }
 
     pub fn recv_best_move(&mut self) -> Result<BestMove, Error> {
-        while match self.recv() {
-            Some(EngineCommand::BestMove(x)) => {
-                return Ok(x);
-            },
-            None => { return Err(Error::CommandError); },
+        while match self.recv(Instant::now(), Duration::new(0, 0)) {
+            Ok(EngineCommand::BestMove(x)) => return Ok(x),
+            Err(e) => return Err(e),
             _ => true,
         } { }
         unreachable!();
     }
 
     fn send(&mut self, command: GuiCommand) -> Result<(), Error> {
-        match self.stdin.write_all(command.to_string().as_bytes()) {
-            Err(_) => {
-                println!("Error Sending!!!");
-                Err(Error::SendError)
-            },
-            Ok(_) => {
-                self.commands.push(Command::new_from_gui(command));
-                Ok(())
-            }
-        }
+        self.stdin.write_all(command.to_string().as_bytes())?;
+        self.commands.push(Command::new_from_gui(command));
+        Ok(())
     }
 
     fn send_uci(&mut self) -> Result<(), Error> {
         self.send(GuiCommand::Uci)?;
-        self.recv_uci_ok()
+       self.recv_uci_ok()
     }
 
-    fn recv(&mut self) -> Option<EngineCommand> {
-        let start = Instant::now();
+    fn recv(&mut self, start: Instant, timeout: Duration) -> Result<EngineCommand, Error> {
         let mut finished = false;
         let mut received_one = false;
         while !finished {
@@ -166,34 +115,42 @@ impl EngineConnection {
                     self.commands.push(c.clone());
                     received_one = true;
                 },
-                Err(x) => {
-                    println!("Error Receiving: {}", x);   
-                    finished = start.elapsed() > Duration::from_millis(100) ||
-                               received_one;
+                Err(err) => match err {
+                    TryRecvError::Disconnected => {
+                        return Err(err.into());
+                    },
+                    TryRecvError::Empty => {
+                        finished = start.elapsed() > timeout ||
+                                   received_one;
+                    }
                 }
-            };
-            std::thread::sleep(Duration::from_millis(50));
+            }
+
+            if !finished {
+                sleep(Duration::from_millis(10));
+            }
         }
 
         for i in self.last_received_index..self.commands.len() {
             match self.commands[i] {
                 Command::Engine(ref x) => {
                     self.last_received_index = i + 1;
-                    println!("Returning {}", x);
-                    return Some(x.clone());
+                    return Ok(x.clone());
                 },
-                ref y => {
-                    println!("Not Sending {}", y);
-                }
-            }
+                _ => { }
+            };
         }
-        None
+
+        Err(Error::NoCommandError)
     }
 
     fn recv_uci_ok(&mut self) -> Result<(), Error> {
-        while match self.recv() {
-            Some(ref c) => c != &EngineCommand::UciOk,
-            None => return Err(Error::CommandError),
+        let start = Instant::now();
+
+        while match self.recv(start, Duration::new(1, 0)) {
+            Ok(ref c) => c != &EngineCommand::UciOk,
+            Err(Error::NoCommandError) => true,
+            Err(e) => return Err(e),
         } {}
         Ok(())
     }
@@ -204,9 +161,12 @@ impl EngineConnection {
     }
 
     fn recv_ready_ok(&mut self) -> Result<(), Error> {
-        while match self.recv() {
-            Some(ref c) => c != &EngineCommand::ReadyOk,
-            None => return Err(Error::CommandError),
+        let start = Instant::now();
+
+        while match self.recv(start, Duration::new(1, 0)) {
+            Ok(ref c) => c != &EngineCommand::ReadyOk,
+            Err(Error::NoCommandError) => true,
+            Err(e) => return Err(e),
         } {}
         Ok(())
     }
@@ -219,5 +179,12 @@ fn open_stockfish() {
     e.set_timer(timer);
     e.send_position(Board::default(), vec!()).unwrap();
     e.send_go().unwrap();
-    e.recv_best_move().unwrap();
+    loop {
+        match e.recv_best_move() {
+            Ok(x) => break,
+            Err(Error::NoCommandError) => {},
+            Err(_) => panic!("Error receiving best move."),
+        };
+        sleep(Duration::from_millis(10));
+    }
 }
