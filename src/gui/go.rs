@@ -3,18 +3,18 @@ use parsers::*;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Default)]
 pub struct Go {
-    pub search_moves: Vec<ChessMove>,
-    pub ponder: Option<ChessMove>,
-    pub wtime: Option<u64>,
-    pub btime: Option<u64>,
-    pub winc: Option<u64>,
-    pub binc: Option<u64>,
-    pub movestogo: Option<u64>,
-    pub depth: Option<u64>,
-    pub nodes: Option<u64>,
-    pub mate: Option<u64>,
-    pub movetime: Option<u64>,
-    pub infinite: bool
+    search_moves: Vec<ChessMove>,
+    ponder: Option<ChessMove>,
+    wtime: Option<u64>,
+    btime: Option<u64>,
+    winc: Option<u64>,
+    binc: Option<u64>,
+    movestogo: Option<u64>,
+    depth: Option<u64>,
+    nodes: Option<u64>,
+    mate: Option<u64>,
+    movetime: Option<u64>,
+    infinite: bool
 }
 
 impl Go {
@@ -131,7 +131,7 @@ impl Go {
     }
 }
 
-named!(pub parse_go_wtime<&str, Go>, do_parse!(
+named!(parse_go_wtime<&str, Go>, do_parse!(
         space >>
         tag!("wtime") >>
         space >>
@@ -140,7 +140,7 @@ named!(pub parse_go_wtime<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_btime<&str, Go>, do_parse!(
+named!(parse_go_btime<&str, Go>, do_parse!(
         space >>
         tag!("btime") >>
         space >>
@@ -149,7 +149,7 @@ named!(pub parse_go_btime<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_winc<&str, Go>, do_parse!(
+named!(parse_go_winc<&str, Go>, do_parse!(
         space >>
         tag!("winc") >>
         space >>
@@ -158,7 +158,7 @@ named!(pub parse_go_winc<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_binc<&str, Go>, do_parse!(
+named!(parse_go_binc<&str, Go>, do_parse!(
         space >>
         tag!("binc") >>
         space >>
@@ -167,7 +167,7 @@ named!(pub parse_go_binc<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_movestogo<&str, Go>, do_parse!(
+named!(parse_go_movestogo<&str, Go>, do_parse!(
         space >>
         tag!("movestogo") >>
         space >>
@@ -176,7 +176,7 @@ named!(pub parse_go_movestogo<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_depth<&str, Go>, do_parse!(
+named!(parse_go_depth<&str, Go>, do_parse!(
         space >>
         tag!("depth") >>
         space >>
@@ -185,7 +185,7 @@ named!(pub parse_go_depth<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_nodes<&str, Go>, do_parse!(
+named!(parse_go_nodes<&str, Go>, do_parse!(
         space >>
         tag!("nodes") >>
         space >>
@@ -194,7 +194,7 @@ named!(pub parse_go_nodes<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_mate<&str, Go>, do_parse!(
+named!(parse_go_mate<&str, Go>, do_parse!(
         space >>
         tag!("mate") >>
         space >>
@@ -203,7 +203,7 @@ named!(pub parse_go_mate<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_movetime<&str, Go>, do_parse!(
+named!(parse_go_movetime<&str, Go>, do_parse!(
         space >>
         tag!("movetime") >>
         space >>
@@ -212,14 +212,14 @@ named!(pub parse_go_movetime<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_infinite<&str, Go>, do_parse!(
+named!(parse_go_infinite<&str, Go>, do_parse!(
         space >>
         tag!("infinite") >>
         (Go::infinite(true))
     )
 );
 
-named!(pub parse_go_ponder<&str, Go>, do_parse!(
+named!(parse_go_ponder<&str, Go>, do_parse!(
         space >>
         tag!("ponder") >>
         space >>
@@ -228,7 +228,7 @@ named!(pub parse_go_ponder<&str, Go>, do_parse!(
     )
 );
 
-named!(pub parse_go_searchmoves<&str, Go>, do_parse!(
+named!(parse_go_searchmoves<&str, Go>, do_parse!(
         space >>
         tag!("searchmoves") >>
         space >>
@@ -236,4 +236,28 @@ named!(pub parse_go_searchmoves<&str, Go>, do_parse!(
         (Go::search_moves(moves.to_vec()))
     )
 );
+
+named!(pub parse_go<&str, Go>, do_parse!(
+        tag!("go") >>
+        go: fold_many1!(
+            alt_complete!(
+                parse_go_wtime |
+                parse_go_btime |
+                parse_go_winc |
+                parse_go_binc |
+                parse_go_movestogo |
+                parse_go_depth |
+                parse_go_nodes |
+                parse_go_mate |
+                parse_go_movetime |
+                parse_go_infinite |
+                parse_go_ponder |
+                parse_go_searchmoves
+            ),
+            Go::default(),
+            |acc: Go, item: Go| acc.combine(&item)) >>
+        (go)
+    )
+);
+
 

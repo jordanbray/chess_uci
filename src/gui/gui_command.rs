@@ -8,7 +8,7 @@ use chess::{ChessMove, Board};
 use chess::{Rank, File, Piece, Square};
 
 use parsers::*;
-use gui::go::*;
+use gui::go::{Go, parse_go};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum GuiCommand {
@@ -99,25 +99,8 @@ named!(parse_quit<&str, GuiCommand>, do_parse!(
     )
 );
 
-named!(parse_go<&str, GuiCommand>, do_parse!(
-        tag!("go") >>
-        go: fold_many1!(
-            alt_complete!(
-                parse_go_wtime |
-                parse_go_btime |
-                parse_go_winc |
-                parse_go_binc |
-                parse_go_movestogo |
-                parse_go_depth |
-                parse_go_nodes |
-                parse_go_mate |
-                parse_go_movetime |
-                parse_go_infinite |
-                parse_go_ponder |
-                parse_go_searchmoves
-            ),
-            Go::default(),
-            |acc: Go, item: Go| acc.combine(&item)) >>
+named!(parse_gui_go<&str, GuiCommand>, do_parse!(
+        go: parse_go >>
         (GuiCommand::Go(go))
     )
 );
@@ -172,7 +155,7 @@ named!(parse_all<&str, GuiCommand>, alt_complete!(
         parse_stop |
         parse_ponderhit |
         parse_quit |
-        parse_go |
+        parse_gui_go |
         parse_position
     )
 );
@@ -212,44 +195,44 @@ impl fmt::Display for GuiCommand {
             },
             GuiCommand::Go(go) => {
                 try!(write!(f, "go"));
-                match go.ponder {
+                match go.get_ponder() {
                     Some(ref p) => try!(write!(f, "ponder {}", p)),
                     None => {},
                 };
 
-                if go.wtime.is_some() {
-                    try!(write!(f, " wtime {}", go.wtime.unwrap()));
+                if go.get_wtime().is_some() {
+                    try!(write!(f, " wtime {}", go.get_wtime().unwrap()));
                 }
-                if go.btime.is_some() {
-                    try!(write!(f, " btime {}", go.btime.unwrap()));
+                if go.get_btime().is_some() {
+                    try!(write!(f, " btime {}", go.get_btime().unwrap()));
                 }
-                if go.winc.is_some() {
-                    try!(write!(f, " winc {}", go.winc.unwrap()));
+                if go.get_winc().is_some() {
+                    try!(write!(f, " winc {}", go.get_winc().unwrap()));
                 }
-                if go.binc.is_some() {
-                    try!(write!(f, " binc {}", go.binc.unwrap()));
+                if go.get_binc().is_some() {
+                    try!(write!(f, " binc {}", go.get_binc().unwrap()));
                 }
-                if go.movestogo.is_some() {
-                    try!(write!(f, " movestogo {}", go.movestogo.unwrap()));
+                if go.get_movestogo().is_some() {
+                    try!(write!(f, " movestogo {}", go.get_movestogo().unwrap()));
                 }
-                if go.depth.is_some() {
-                    try!(write!(f, " depth {}", go.depth.unwrap()));
+                if go.get_depth().is_some() {
+                    try!(write!(f, " depth {}", go.get_depth().unwrap()));
                 }
-                if go.nodes.is_some() {
-                    try!(write!(f, " nodes {}", go.nodes.unwrap()));
+                if go.get_nodes().is_some() {
+                    try!(write!(f, " nodes {}", go.get_nodes().unwrap()));
                 }
-                if go.mate.is_some() {
-                    try!(write!(f, " mate {}", go.mate.unwrap()));
+                if go.get_mate().is_some() {
+                    try!(write!(f, " mate {}", go.get_mate().unwrap()));
                 }
-                if go.movetime.is_some() {
-                    try!(write!(f, " movetime {}", go.movetime.unwrap()));
+                if go.get_movetime().is_some() {
+                    try!(write!(f, " movetime {}", go.get_movetime().unwrap()));
                 }
-                if go.infinite {
+                if go.get_infinite() {
                     try!(write!(f, " infinite"));
                 }
 
-                if go.search_moves.len() != 0 {
-                    try!(write!(f, " searchmoves {}", go.search_moves.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" ")));
+                if go.get_search_moves().len() != 0 {
+                    try!(write!(f, " searchmoves {}", go.get_search_moves().iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" ")));
                 }
                 writeln!(f, "")
             }
