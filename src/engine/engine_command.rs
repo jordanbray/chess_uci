@@ -17,7 +17,7 @@ use engine::score::Score;
 use engine::option_type::OptionType;
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
-enum EngineCommand {
+pub enum EngineCommand {
     Id(Id),
     UciOk,
     ReadyOk,

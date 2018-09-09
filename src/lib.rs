@@ -7,6 +7,8 @@ mod error;
 mod parsers;
 mod engine;
 mod timer;
+mod command;
+mod engine_connection;
 
 pub use gui::gui_command::*;
 pub use gui::go::Go;
@@ -18,6 +20,9 @@ pub use engine::copyprotection::CopyProtection;
 pub use engine::registration::Registration;
 pub use engine::option_type::OptionType;
 pub use engine::engine_option::EngineOption;
+pub use engine::engine_command::EngineCommand;
 pub use engine::info::Info;
 pub use timer::timer::Timer;
+pub use command::Command;
+pub use engine_connection::EngineConnection;
 
