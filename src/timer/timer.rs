@@ -142,7 +142,7 @@ impl Timer {
     }
 
     pub fn made_move(&mut self) {
-        if self.player == Color::Black {
+        if self.player == Color::Black && self.moves_to_go > 0 {
             self.moves_to_go -= 1;
         }
         
