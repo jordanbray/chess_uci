@@ -222,13 +222,13 @@ impl<'a> EngineConnection<'a> {
 }
 
 #[test]
-fn open_stockfish() {
+fn test_stockfish_if_exists() {
     let mut timer = Timer::new_with_increment(Duration::new(5, 0), Duration::new(1, 0));
-    let mut e = EngineConnection::new("/usr/bin/stockfish").unwrap();
-
-    e.set_timer(&mut timer);
-    e.send_position(Board::default(), vec!()).unwrap();
-    e.send_go().unwrap();
-    e.recv_best_move_using_timer().unwrap();
+    if let Ok(mut e) = EngineConnection::new("/usr/bin/stockfish") {
+        e.set_timer(&mut timer);
+        e.send_position(Board::default(), vec!()).unwrap();
+        e.send_go().unwrap();
+        e.recv_best_move_using_timer().unwrap();
+    }
 }
 

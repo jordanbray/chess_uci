@@ -4,5 +4,5 @@ version = "0.1.0"
 authors = ["Jordan Bray <jordanbray@gmail.com>"]
 
 [dependencies]
-chess = "1.0.4"
+chess = "1.0.5"
 nom = "4.0.0"
