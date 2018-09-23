@@ -15,15 +15,14 @@ use gui::gui_command::GuiCommand;
 use gui::go::Go;
 use timer::timer::Timer;
 
-pub struct EngineConnection {
-    commands: Vec<Command>,
+pub struct EngineConnection<'a> {
+    history: Vec<Command>,
     stdin: ChildStdin,
     receiver: Receiver<Command>,
-    timer: Option<Timer>,
-    last_received_index: usize,
+    timer: Option<&'a mut Timer>,
 }
 
-impl EngineConnection {
+impl<'a> EngineConnection<'a> {
     pub fn new(path: &str) -> Result<EngineConnection, Error> {
         let process = process::Command::new(path)
                                             .stdin(Stdio::piped())
@@ -50,10 +49,9 @@ impl EngineConnection {
 
         let mut ec = EngineConnection {
             stdin: process.stdin.unwrap(),
-            commands: vec!(),
+            history: vec!(),
             receiver: rx,
             timer: None,
-            last_received_index: 0,
         };
 
         ec.send_uci()?;
@@ -62,7 +60,7 @@ impl EngineConnection {
         Ok(ec)
     }
 
-    pub fn set_timer(&mut self, timer: Timer) {
+    pub fn set_timer(&mut self, timer: &'a mut Timer) {
         self.timer = Some(timer);
     }
 
@@ -74,71 +72,121 @@ impl EngineConnection {
 
     pub fn send_go(&mut self) -> Result<(), Error> {
         let mut go = Go::default();
-        if let Some(timer) = self.timer {
-            go = go.combine(&timer.into())
+        if let Some(ref timer) = self.timer {
+            go = go.combine(&((**timer).into()))
         }
 
         self.send(GuiCommand::Go(go))?;
-        if let Some(mut timer) = self.timer {
+        if let Some(ref mut timer) = self.timer {
             timer.start();
         }
         Ok(())
     }
 
     pub fn recv_best_move(&mut self) -> Result<BestMove, Error> {
-        while match self.recv(Instant::now(), Duration::new(0, 0)) {
-            Ok(EngineCommand::BestMove(x)) => return Ok(x),
-            Err(e) => return Err(e),
-            _ => true,
-        } { }
+        loop {
+            match self.recv(Instant::now(), Duration::new(0, 0)) {
+                Ok(EngineCommand::BestMove(x)) => return Ok(x),
+                Ok(_) => {},
+                Err(e) => return Err(e),
+            }
+        }
+    }
+
+    pub fn history(&self) -> &Vec<Command> {
+        &self.history
+    }
+
+    pub fn recv_best_move_using_timer(&mut self) -> Result<BestMove, Error> {
+        // check to make sure there is a timer, and that it was started
+        if let Some(ref mut timer) = self.timer {
+            if !timer.started() {
+                timer.start();
+            }
+        } else {
+            return Err(Error::CommandError);
+        }
+
+        // recv(..) until we get a best_move from the engine, or until
+        // the engine times out.
+        //
+        // Return any unexpected errors as well, such as if the engine
+        // crashes.
+        let mut best_move: Option<BestMove> = None;
+        while best_move.is_none() {
+            match self.recv_best_move() {
+                Ok(x) => {
+                    best_move = Some(x);
+                },
+                Err(Error::NoCommandError) => { },
+                Err(x) => return Err(x)
+            };
+
+            if let Some(ref timer) = self.timer {
+                if timer.timeout_for(timer.get_player()) {
+                    break;
+                }
+            }
+
+            // Don't peg the CPU.  The engine *is* using it to think,
+            // afer all...
+            sleep(Duration::from_millis(1));
+        }
+
+        // tell the timer the engine made its move.  Additionally,
+        // confirm with the timer that it didn't timeout after making
+        // the move.
+        if let Some(ref mut timer) = self.timer {
+            if let Some(best_move) = best_move {
+                timer.made_move();
+                if timer.timeout_for(!timer.get_player()) {
+                    return Err(Error::Timeout);
+                }
+                return Ok(best_move);
+            } else {
+                return Err(Error::Timeout);
+            }
+        }
+
+        // We can't hit this point, because we already know
+        // that self.timer is not None.
         unreachable!();
     }
 
     fn send(&mut self, command: GuiCommand) -> Result<(), Error> {
         self.stdin.write_all(command.to_string().as_bytes())?;
-        self.commands.push(Command::new_from_gui(command));
+        self.history.push(Command::new_from_gui(command));
         Ok(())
     }
 
     fn send_uci(&mut self) -> Result<(), Error> {
         self.send(GuiCommand::Uci)?;
-       self.recv_uci_ok()
+        self.recv_uci_ok()
     }
 
     fn recv(&mut self, start: Instant, timeout: Duration) -> Result<EngineCommand, Error> {
-        let mut finished = false;
-        let mut received_one = false;
-        while !finished {
-            let command = self.receiver.try_recv();
-            match command {
-                Ok(c) => {
-                    self.commands.push(c.clone());
-                    received_one = true;
+        loop {
+            match self.receiver.try_recv() {
+                Ok(Command::Engine(c)) => {
+                    self.history.push(Command::Engine(c.clone()));
+                    return Ok(c);
                 },
-                Err(err) => match err {
-                    TryRecvError::Disconnected => {
-                        return Err(err.into());
-                    },
-                    TryRecvError::Empty => {
-                        finished = start.elapsed() > timeout ||
-                                   received_one;
+
+                Ok(c) => {
+                    self.history.push(c);
+                },
+
+                Err(TryRecvError::Disconnected) =>
+                    return Err(Error::EngineDeadError),
+
+                Err(TryRecvError::Empty) => {
+                    if start.elapsed() < timeout {
+                        sleep(Duration::from_millis(1));
+                    } else {
+                        break;
                     }
                 }
             }
-
-            if !finished {
-                sleep(Duration::from_millis(10));
-            }
-        }
-
-        for i in self.last_received_index..self.commands.len() {
-            match self.commands[i] {
-                Command::Engine(ref x) => {
-                    self.last_received_index = i + 1;
-                    return Ok(x.clone());
-                },
-                _ => { }
-            };
         }
 
         Err(Error::NoCommandError)
@@ -147,12 +195,13 @@ impl EngineConnection {
     fn recv_uci_ok(&mut self) -> Result<(), Error> {
         let start = Instant::now();
 
-        while match self.recv(start, Duration::new(1, 0)) {
-            Ok(ref c) => c != &EngineCommand::UciOk,
-            Err(Error::NoCommandError) => true,
-            Err(e) => return Err(e),
-        } {}
-        Ok(())
+        loop {
+            match self.recv(start, Duration::new(5, 0)) {
+                Ok(EngineCommand::UciOk) => return Ok(()),
+                Ok(_) => {},
+                Err(e) => return Err(e),
+            }
+        }
     }
 
     fn send_isready(&mut self) -> Result<(), Error> {
@@ -162,29 +211,24 @@ impl EngineConnection {
 
     fn recv_ready_ok(&mut self) -> Result<(), Error> {
         let start = Instant::now();
-
-        while match self.recv(start, Duration::new(1, 0)) {
-            Ok(ref c) => c != &EngineCommand::ReadyOk,
-            Err(Error::NoCommandError) => true,
-            Err(e) => return Err(e),
-        } {}
-        Ok(())
+        loop {
+            match self.recv(start, Duration::new(1, 0)) {
+                Ok(EngineCommand::ReadyOk) => return Ok(()),
+                Ok(_) => {},
+                Err(e) => return Err(e),
+            }
+        }
     }
 }
 
 #[test]
 fn open_stockfish() {
+    let mut timer = Timer::new_with_increment(Duration::new(5, 0), Duration::new(1, 0));
     let mut e = EngineConnection::new("/usr/bin/stockfish").unwrap();
-    let timer = Timer::new_with_increment(Duration::new(5, 0), Duration::new(1, 0));
-    e.set_timer(timer);
+
+    e.set_timer(&mut timer);
     e.send_position(Board::default(), vec!()).unwrap();
     e.send_go().unwrap();
-    loop {
-        match e.recv_best_move() {
-            Ok(x) => break,
-            Err(Error::NoCommandError) => {},
-            Err(_) => panic!("Error receiving best move."),
-        };
-        sleep(Duration::from_millis(10));
-    }
+    e.recv_best_move_using_timer().unwrap();
 }
+

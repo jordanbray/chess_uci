@@ -14,7 +14,7 @@ pub enum Error {
     IoError,
     EngineDeadError,
     NoCommandError,
-    TImeout,
+    Timeout,
 }
 
 impl<'a> From<Err<&'a str>> for Error {

@@ -9,6 +9,7 @@ mod engine;
 mod timer;
 mod command;
 mod engine_connection;
+mod engine_base;
 
 pub use gui::gui_command::*;
 pub use gui::go::Go;
@@ -25,4 +26,4 @@ pub use engine::info::Info;
 pub use timer::timer::Timer;
 pub use command::Command;
 pub use engine_connection::EngineConnection;
-
+pub use engine_base::engine_options::EngineOptions;

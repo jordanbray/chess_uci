@@ -125,6 +125,18 @@ impl Timer {
         }
     }
 
+    pub fn timeout_for(&self, player: Color) -> bool {
+        if let Some(remaining) = self.remaining_for(player) {
+            remaining == Duration::new(0, 0)
+        } else {
+            false
+        }
+    }
+
+    pub fn get_player(&self) -> Color {
+        self.player
+    }
+
     pub fn set_add_time_on_move_n(&mut self, add: Duration) {
         self.add_time_on_move_n = add;
     }
@@ -211,6 +223,10 @@ impl Timer {
 
     pub fn start(&mut self) {
         self.start = Some(Instant::now());
+    }
+
+    pub fn started(&self) -> bool {
+        self.start.is_some()
     }
 
     pub fn new_without_increment(time: Duration) -> Timer {
