@@ -4,5 +4,5 @@ version = "0.1.0"
 authors = ["Jordan Bray <jordanbray@gmail.com>"]
 
 [dependencies]
-chess = { path = "../chess" }
+chess = "1.0.4"
 nom = "4.0.0"
