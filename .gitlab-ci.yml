@@ -22,18 +22,3 @@ test:cargo:
   script:
   - rustc --version && cargo --version      # Print version info for debugging
   - cargo test --all --verbose
-
-deploy_production:
-  stage: deploy
-  environment: Production
-  only:
-    - master
-  script:
-  - cargo doc --release
-  - sshpass -V
-  - export SSHPASS=$USER_PASS
-#  - sshpass -e scp -o stricthostkeychecking=no -r target/doc/* chess_docs@jordanbray.com:/bucket/chess_docs
-#  - sshpass -e scp -o stricthostkeychecking=no -r docs/* chess_docs@jordanbray.com:/bucket/chess_docs
-  - cargo login $CRATESIO_TOKEN
-  - cargo publish
-
