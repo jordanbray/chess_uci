@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate nom;
 extern crate chess;
+extern crate num_traits;
 
 mod gui;
 mod error;
@@ -27,3 +28,4 @@ pub use timer::timer::Timer;
 pub use command::Command;
 pub use engine_connection::EngineConnection;
 pub use engine_base::engine_options::EngineOptions;
+pub use engine_base::eval::Eval;
