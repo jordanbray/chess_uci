@@ -29,3 +29,6 @@ pub use command::Command;
 pub use engine_connection::EngineConnection;
 pub use engine_base::engine_options::EngineOptions;
 pub use engine_base::eval::Eval;
+pub use engine_base::tt_entry::TtEntry;
+pub use engine_base::tt_score::TtScore;
+pub use engine_base::search_info::SearchInfo;
