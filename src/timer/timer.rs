@@ -133,6 +133,14 @@ impl Timer {
         }
     }
 
+    pub fn elapsed(&self) -> Option<Duration> {
+        if let Some(start) = self.start {
+            Some(start.elapsed())
+        } else {
+            None
+        }
+    }
+
     pub fn get_player(&self) -> Color {
         self.player
     }
