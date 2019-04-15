@@ -40,6 +40,10 @@ impl PlayerTimer {
         self.increment
     }
 
+    pub fn get_time(&self) -> Duration {
+        self.time
+    }
+
     pub fn made_move(&mut self, start: Option<Instant>, extra_time: Duration) {
         self.time = self.remaining(start, true);
         self.time += self.increment;
@@ -109,6 +113,30 @@ impl Into<Go> for Timer {
 }
 
 impl Timer {
+    pub fn get_add_time_on_move_n(&self) -> Duration {
+        self.add_time_on_move_n
+    }
+
+    pub fn get_increment(&self) -> Duration {
+        let timer = if self.player == Color::White { self.white } else { self.black };
+
+        if let Some(t) = timer {
+            t.get_increment()
+        } else {
+            Duration::new(0, 0)
+        }
+    }
+
+    pub fn get_time(&self) -> Duration {
+        let timer = if self.player == Color::White { self.white } else { self.black };
+
+        if let Some(t) = timer {
+            t.get_time()
+        } else {
+            Duration::new(0, 0)
+        }
+    }
+
     pub fn remaining_for(&self, player: Color) -> Option<Duration> {
         let timer = if player == Color::White { self.white } else { self.black };
 
@@ -123,6 +151,10 @@ impl Timer {
         } else {
             None
         }
+    }
+
+    pub fn remaining(&self) -> Option<Duration> {
+        self.remaining_for(self.player)
     }
 
     pub fn timeout_for(&self, player: Color) -> bool {
@@ -141,8 +173,16 @@ impl Timer {
         }
     }
 
+    pub fn get_start(&self) -> Option<Instant> {
+        self.start
+    }
+
     pub fn get_player(&self) -> Color {
         self.player
+    }
+
+    pub fn get_moves_to_go(&self) -> u64 {
+        self.moves_to_go
     }
 
     pub fn set_add_time_on_move_n(&mut self, add: Duration) {
