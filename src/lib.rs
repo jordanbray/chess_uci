@@ -34,3 +34,4 @@ pub use engine_base::tt_score::TtScore;
 pub use engine_base::search_info::SearchInfo;
 pub use engine_base::evaluate::{Evaluate, DefaultEvaluate};
 pub use engine_base::time_manager::{TimeManager, DefaultTimeManager};
+pub use engine_base::search::{Search, DefaultSearch};

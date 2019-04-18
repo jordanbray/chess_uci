@@ -5,5 +5,5 @@ pub mod tt_entry;
 pub mod search_info;
 pub mod evaluate;
 pub mod time_manager;
-
+pub mod search;
 
