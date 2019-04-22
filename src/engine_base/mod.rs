@@ -6,4 +6,5 @@ pub mod search_info;
 pub mod evaluate;
 pub mod time_manager;
 pub mod search;
+pub mod pv;
 

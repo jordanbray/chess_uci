@@ -2,6 +2,8 @@
 extern crate nom;
 extern crate chess;
 extern crate num_traits;
+extern crate arrayvec;
+extern crate nodrop;
 
 mod gui;
 mod error;
@@ -35,3 +37,4 @@ pub use engine_base::search_info::SearchInfo;
 pub use engine_base::evaluate::{Evaluate, DefaultEvaluate};
 pub use engine_base::time_manager::{TimeManager, DefaultTimeManager};
 pub use engine_base::search::{Search, DefaultSearch};
+pub use engine_base::pv::Pv;
