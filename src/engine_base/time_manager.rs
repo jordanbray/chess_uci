@@ -40,3 +40,5 @@ impl TimeManager<i32> for DefaultTimeManager {
         self.continue_id(0, timer, moves)
     }
 }
+
+// This is hard to test.  Perhaps Timer needs to be a trait to enable testing...
