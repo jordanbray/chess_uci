@@ -1,5 +1,5 @@
 use super::eval::Eval;
-use chess::{Board, Piece, Color};
+use chess::{Board, Color, Piece};
 use std::default::Default;
 
 pub trait Evaluate<E: Eval> {
@@ -27,7 +27,7 @@ impl Evaluate<i32> for DefaultEvaluate {
 
         let white_pawns = (white & pawns).popcnt() as i32;
         let black_pawns = (black & pawns).popcnt() as i32;
-        
+
         let white_knights = (white & knights).popcnt() as i32;
         let black_knights = (black & knights).popcnt() as i32;
 
@@ -40,11 +40,11 @@ impl Evaluate<i32> for DefaultEvaluate {
         let white_queens = (white & queens).popcnt() as i32;
         let black_queens = (black & queens).popcnt() as i32;
 
-        self.pawn * (white_pawns - black_pawns) +
-            self.knight * (white_knights - black_knights) +
-            self.bishop * (white_bishops - black_bishops) +
-            self.rook * (white_rooks - black_rooks) +
-            self.queen * (white_queens - black_queens)
+        self.pawn * (white_pawns - black_pawns)
+            + self.knight * (white_knights - black_knights)
+            + self.bishop * (white_bishops - black_bishops)
+            + self.rook * (white_rooks - black_rooks)
+            + self.queen * (white_queens - black_queens)
     }
 }
 
@@ -65,4 +65,3 @@ fn should_be_equal() {
     let mut evaluator = DefaultEvaluate::default();
     assert_eq!(evaluator.evaluate(Board::default(), -100, 100), 0);
 }
-

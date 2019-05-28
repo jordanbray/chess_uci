@@ -1,7 +1,7 @@
-use chess::ChessMove;
 use crate::engine::info::Info;
 use crate::engine::score::Score;
 use crate::timer::timer::Timer;
+use chess::ChessMove;
 
 pub struct SearchInfo {
     depth: Option<u64>,
@@ -21,15 +21,15 @@ impl SearchInfo {
             depth: None,
             seldepth: None,
             nodes: None,
-            pv: vec!(),
+            pv: vec![],
             multi_pv: None,
             score: None,
             tb_hits: None,
-            cur_line: vec!(),
+            cur_line: vec![],
             engine_string: None,
         }
     }
-    
+
     pub fn set_depth(&mut self, depth: u64) {
         self.depth = Some(depth);
     }
@@ -65,7 +65,7 @@ impl SearchInfo {
     pub fn set_engine_string(&mut self, engine_string: String) {
         self.engine_string = Some(engine_string);
     }
-    
+
     pub fn create_engine_info(self, timer: Timer) -> Info {
         let elapsed = timer.elapsed();
 
@@ -98,7 +98,7 @@ impl SearchInfo {
         if let Some(mpv) = self.multi_pv {
             info = info.combine(&Info::multi_pv(mpv));
         }
-        
+
         if let Some(score) = self.score {
             info = info.combine(&Info::score(score));
         }
@@ -124,10 +124,10 @@ fn convert_to_info() {
     search_info.set_depth(10);
     search_info.set_score(Score::Cp(100));
     search_info.set_nodes(1000);
-    search_info.set_pv(vec!(ChessMove::default()));
+    search_info.set_pv(vec![ChessMove::default()]);
     search_info.set_multi_pv(0);
     search_info.set_tb_hits(10);
-    search_info.set_cur_line(vec!(ChessMove::default(), ChessMove::default()));
+    search_info.set_cur_line(vec![ChessMove::default(), ChessMove::default()]);
     search_info.set_engine_string("Hello, World!!!".to_string());
 
     let timer = Timer::new_without_increment(Duration::from_millis(1000));
@@ -138,12 +138,14 @@ fn convert_to_info() {
     desired_info = desired_info.combine(&Info::depth(10));
     desired_info = desired_info.combine(&Info::score(Score::Cp(100)));
     desired_info = desired_info.combine(&Info::nodes(1000));
-    desired_info = desired_info.combine(&Info::pv(vec!(ChessMove::default())));
+    desired_info = desired_info.combine(&Info::pv(vec![ChessMove::default()]));
     desired_info = desired_info.combine(&Info::multi_pv(0));
     desired_info = desired_info.combine(&Info::tb_hits(10));
-    desired_info = desired_info.combine(&Info::cur_line(vec!(ChessMove::default(), ChessMove::default())));
+    desired_info = desired_info.combine(&Info::cur_line(vec![
+        ChessMove::default(),
+        ChessMove::default(),
+    ]));
     desired_info = desired_info.combine(&Info::engine_string("Hello, World!!!".to_string()));
 
     assert_eq!(info, desired_info);
-
 }

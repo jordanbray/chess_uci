@@ -1,18 +1,18 @@
 use std::io::{BufRead, BufReader, Write};
-use std::process::{ChildStdin, Stdio, self};
+use std::process::{self, ChildStdin, Stdio};
 use std::str::FromStr;
-use std::time::{Duration, Instant};
-use std::sync::mpsc::{Receiver, sync_channel, TryRecvError};
+use std::sync::mpsc::{sync_channel, Receiver, TryRecvError};
 use std::thread::{sleep, spawn};
+use std::time::{Duration, Instant};
 
 use chess::{Board, ChessMove};
 
 use command::Command;
-use error::Error;
 use engine::best_move::BestMove;
 use engine::engine_command::EngineCommand;
-use gui::gui_command::GuiCommand;
+use error::Error;
 use gui::go::Go;
+use gui::gui_command::GuiCommand;
 use timer::timer::Timer;
 
 pub struct EngineConnection<'a> {
@@ -25,9 +25,9 @@ pub struct EngineConnection<'a> {
 impl<'a> EngineConnection<'a> {
     pub fn new(path: &str) -> Result<EngineConnection, Error> {
         let process = process::Command::new(path)
-                                            .stdin(Stdio::piped())
-                                            .stdout(Stdio::piped())
-                                            .spawn()?;
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()?;
 
         let (tx, rx) = sync_channel(1024);
 
@@ -49,7 +49,7 @@ impl<'a> EngineConnection<'a> {
 
         let mut ec = EngineConnection {
             stdin: process.stdin.unwrap(),
-            history: vec!(),
+            history: vec![],
             receiver: rx,
             timer: None,
         };
@@ -64,9 +64,7 @@ impl<'a> EngineConnection<'a> {
         self.timer = Some(timer);
     }
 
-    pub fn send_position(&mut self,
-                         position: Board,
-                         moves: Vec<ChessMove>) -> Result<(), Error> {
+    pub fn send_position(&mut self, position: Board, moves: Vec<ChessMove>) -> Result<(), Error> {
         self.send(GuiCommand::Position(position, moves))
     }
 
@@ -87,7 +85,7 @@ impl<'a> EngineConnection<'a> {
         loop {
             match self.recv(Instant::now(), Duration::new(0, 0)) {
                 Ok(EngineCommand::BestMove(x)) => return Ok(x),
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => return Err(e),
             }
         }
@@ -117,9 +115,9 @@ impl<'a> EngineConnection<'a> {
             match self.recv_best_move() {
                 Ok(x) => {
                     best_move = Some(x);
-                },
-                Err(Error::NoCommandError) => { },
-                Err(x) => return Err(x)
+                }
+                Err(Error::NoCommandError) => {}
+                Err(x) => return Err(x),
             };
 
             if let Some(ref timer) = self.timer {
@@ -170,14 +168,13 @@ impl<'a> EngineConnection<'a> {
                 Ok(Command::Engine(c)) => {
                     self.history.push(Command::Engine(c.clone()));
                     return Ok(c);
-                },
+                }
 
                 Ok(c) => {
                     self.history.push(c);
-                },
+                }
 
-                Err(TryRecvError::Disconnected) =>
-                    return Err(Error::EngineDeadError),
+                Err(TryRecvError::Disconnected) => return Err(Error::EngineDeadError),
 
                 Err(TryRecvError::Empty) => {
                     if start.elapsed() < timeout {
@@ -198,7 +195,7 @@ impl<'a> EngineConnection<'a> {
         loop {
             match self.recv(start, Duration::new(5, 0)) {
                 Ok(EngineCommand::UciOk) => return Ok(()),
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => return Err(e),
             }
         }
@@ -214,7 +211,7 @@ impl<'a> EngineConnection<'a> {
         loop {
             match self.recv(start, Duration::new(1, 0)) {
                 Ok(EngineCommand::ReadyOk) => return Ok(()),
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => return Err(e),
             }
         }
@@ -226,9 +223,8 @@ fn test_stockfish_if_exists() {
     let mut timer = Timer::new_with_increment(Duration::new(5, 0), Duration::new(1, 0));
     if let Ok(mut e) = EngineConnection::new("/usr/bin/stockfish") {
         e.set_timer(&mut timer);
-        e.send_position(Board::default(), vec!()).unwrap();
+        e.send_position(Board::default(), vec![]).unwrap();
         e.send_go().unwrap();
         e.recv_best_move_using_timer().unwrap();
     }
 }
-

@@ -1,9 +1,24 @@
 use chess::Color;
-use num_traits::{Num, NumAssign, NumAssignOps, NumOps, Signed, Bounded, NumCast, PrimInt};
-use std::cmp::{PartialOrd, PartialEq};
+use num_traits::{
+    Bounded, Num, NumAssign, NumAssignOps, NumCast, NumOps, PrimInt, Signed, WrappingAdd,
+    WrappingMul, WrappingSub,
+};
+use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Debug;
 
-pub trait Eval: Num + NumAssign + NumAssignOps + NumOps + Signed + Bounded + PartialEq + PartialOrd + NumCast + Debug + Copy  {
+pub trait Eval:
+    Num
+    + NumAssign
+    + NumAssignOps
+    + NumOps
+    + Signed
+    + Bounded
+    + PartialEq
+    + PartialOrd
+    + NumCast
+    + Debug
+    + Copy
+{
     fn max_supported_mates() -> Self;
     fn from_ply(ply: i16) -> Self;
     fn new_mate(ply: i16, color: Color) -> Self;
@@ -11,10 +26,12 @@ pub trait Eval: Num + NumAssign + NumAssignOps + NumOps + Signed + Bounded + Par
     fn add_depth(&self, amount: i16) -> Self;
     fn min_eval() -> Self;
     fn max_eval() -> Self;
+    fn null() -> Self;
+    fn bound(other: Self) -> Self;
 }
 
 // Number line for integers, used below:
-// i??::min_value() == unused,
+// i??::min_value() == null evaluation,
 // -i??::max_value() == -inf,
 // -i??::max_value() + 1 == Black mates in 0
 // -i??::max_value() + 2 == Black mates in 1
@@ -30,7 +47,7 @@ pub trait Eval: Num + NumAssign + NumAssignOps + NumOps + Signed + Bounded + Par
 // i??::max_value() - 2 == White mates in 1
 // i??::max_value() - 1 == White mates in 0
 // i??::max_value() == inf
-// 
+//
 // This line works on 1s complement and 2s complement.
 // i??::min_value() is unused because (for example on 8-bit), -128 cannot be negated into +128,
 // because +128 cannot be represented in 8 bits.
@@ -39,7 +56,22 @@ pub trait Eval: Num + NumAssign + NumAssignOps + NumOps + Signed + Bounded + Par
 // value can be negated into a maximum value.
 impl<T> Eval for T
 where
-    T: Num + NumAssign + NumAssignOps + NumOps + Signed + Bounded + PartialEq + PartialOrd + NumCast + Debug + Copy + PrimInt {
+    T: Num
+        + NumAssign
+        + NumAssignOps
+        + NumOps
+        + Signed
+        + Bounded
+        + PartialEq
+        + PartialOrd
+        + NumCast
+        + Debug
+        + Copy
+        + PrimInt
+        + WrappingAdd
+        + WrappingSub
+        + WrappingMul,
+{
     fn max_supported_mates() -> Self {
         Self::from(800).expect("Failed to convert value 800 to Eval type.")
     }
@@ -75,13 +107,33 @@ where
         T::max_value()
     }
 
+    fn null() -> Self {
+        T::min_value()
+    }
+
+    fn bound(other: Self) -> Self {
+        if other < Self::min_eval() {
+            Self::min_eval()
+        } else {
+            other
+        }
+    }
+
     fn depth_to_mate(&self) -> Option<i64> {
         if *self <= Self::min_eval() || *self >= Self::max_eval() {
             None
         } else if *self > Self::max_eval() - Self::max_supported_mates() - Self::one() {
-            Some((Self::max_eval() - *self - Self::one()).to_i64().expect("Failed to convert mate depth to i64"))
+            Some(
+                (Self::max_eval() - *self - Self::one())
+                    .to_i64()
+                    .expect("Failed to convert mate depth to i64"),
+            )
         } else if *self < Self::min_eval() + Self::max_supported_mates() + Self::one() {
-            Some((Self::min_eval() - *self + Self::one()).to_i64().expect("Failed to convert mate depth to i64"))
+            Some(
+                (Self::min_eval() - *self + Self::one())
+                    .to_i64()
+                    .expect("Failed to convert mate depth to i64"),
+            )
         } else {
             None
         }
@@ -90,7 +142,10 @@ where
 
 #[cfg(test)]
 fn test_mates<T: Eval>() {
-    assert_eq!(T::min_value() + T::one() + T::one(), T::new_mate(0, Color::Black));
+    assert_eq!(
+        T::min_value() + T::one() + T::one(),
+        T::new_mate(0, Color::Black)
+    );
     assert_eq!(T::max_value() - T::one(), T::new_mate(0, Color::White));
 
     assert!(T::new_mate(0, Color::Black) < T::new_mate(1, Color::Black));
@@ -102,7 +157,10 @@ fn test_mates<T: Eval>() {
     assert_eq!(T::new_mate(10, Color::White).depth_to_mate(), Some(10));
     assert_eq!(T::new_mate(10, Color::Black).depth_to_mate(), Some(-10));
 
-    assert_eq!(-T::new_mate(10, Color::Black), T::new_mate(10, Color::White));
+    assert_eq!(
+        -T::new_mate(10, Color::Black),
+        T::new_mate(10, Color::White)
+    );
 
     assert_eq!(T::min_value().add_depth(1), T::min_value());
     assert_eq!(T::max_value().add_depth(1), T::max_value());

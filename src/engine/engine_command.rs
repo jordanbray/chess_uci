@@ -1,20 +1,20 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
-use engine::id::{Id, parse_engine_id};
-use engine::best_move::{BestMove, parse_best_move};
-use engine::copyprotection::{CopyProtection, parse_copyprotection};
-use engine::registration::{Registration, parse_registration};
-use engine::info::{Info, parse_info};
-use engine::engine_option::{EngineOption, parse_engine_option};
+use engine::best_move::{parse_best_move, BestMove};
+use engine::copyprotection::{parse_copyprotection, CopyProtection};
+use engine::engine_option::{parse_engine_option, EngineOption};
+use engine::id::{parse_engine_id, Id};
+use engine::info::{parse_info, Info};
+use engine::registration::{parse_registration, Registration};
 
 #[cfg(test)]
-use chess::{Square, Rank, File, ChessMove};
-#[cfg(test)]
-use engine::score::Score;
+use chess::{ChessMove, File, Rank, Square};
 #[cfg(test)]
 use engine::option_type::OptionType;
+#[cfg(test)]
+use engine::score::Score;
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub enum EngineCommand {
@@ -97,7 +97,6 @@ impl FromStr for EngineCommand {
     }
 }
 
-
 impl fmt::Display for EngineCommand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -124,12 +123,18 @@ fn test_parse(s: &str, e: EngineCommand) {
 
 #[test]
 fn test_engine_command_id_name() {
-    test_parse("id name test engine\n", EngineCommand::Id(Id::name("test engine")));
+    test_parse(
+        "id name test engine\n",
+        EngineCommand::Id(Id::name("test engine")),
+    );
 }
 
 #[test]
 fn test_engine_command_id_author() {
-    test_parse("id author Jordan Bray\n", EngineCommand::Id(Id::author("Jordan Bray")));
+    test_parse(
+        "id author Jordan Bray\n",
+        EngineCommand::Id(Id::author("Jordan Bray")),
+    );
 }
 
 #[test]
@@ -144,29 +149,46 @@ fn test_engine_command_readyok() {
 
 #[test]
 fn test_engine_command_best_move() {
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-                              Square::make_square(Rank::Fourth, File::E), None);
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
 
-    test_parse("bestmove e2e4\n", EngineCommand::BestMove(BestMove::new(e2e4)));
+    test_parse(
+        "bestmove e2e4\n",
+        EngineCommand::BestMove(BestMove::new(e2e4)),
+    );
 }
 
 #[test]
 fn test_engine_command_copy_protection() {
-    test_parse("copyprotection ok\n", EngineCommand::CopyProtection(CopyProtection::Good));
+    test_parse(
+        "copyprotection ok\n",
+        EngineCommand::CopyProtection(CopyProtection::Good),
+    );
 }
 
 #[test]
 fn test_engine_command_registration() {
-    test_parse("registration ok\n", EngineCommand::Registration(Registration::Good));
+    test_parse(
+        "registration ok\n",
+        EngineCommand::Registration(Registration::Good),
+    );
 }
 
 #[test]
 fn test_engine_command_info() {
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-                              Square::make_square(Rank::Fourth, File::E), None);
-    let e7e5 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-                              Square::make_square(Rank::Fifth, File::E), None);
-
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
+    let e7e5 = ChessMove::new(
+        Square::make_square(Rank::Seventh, File::E),
+        Square::make_square(Rank::Fifth, File::E),
+        None,
+    );
 
     test_parse("info depth 2 seldepth 3 multipv 1 score cp 6 nodes 100 time 1 nps 1000 currmove e2e4 currmovenumber 1 tbhits 0 pv e2e4 e7e5\n",
               EngineCommand::Info(Info::pv(vec![e2e4, e7e5])
@@ -184,9 +206,11 @@ fn test_engine_command_info() {
 
 #[test]
 fn test_engine_command_engine_option() {
-    test_parse("option name Contempt type spin default 0 min -100 max 100\n",
-                       EngineCommand::EngineOption(
-                           EngineOption::new("Contempt".to_string(),
-                                             OptionType::Spin(0, -100, 100))));
+    test_parse(
+        "option name Contempt type spin default 0 min -100 max 100\n",
+        EngineCommand::EngineOption(EngineOption::new(
+            "Contempt".to_string(),
+            OptionType::Spin(0, -100, 100),
+        )),
+    );
 }
-

@@ -1,12 +1,12 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
-use parsers::*;
 use chess::ChessMove;
+use parsers::*;
 
 #[cfg(test)]
-use chess::{Square, Rank, File};
+use chess::{File, Rank, Square};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default)]
 pub struct BestMove {
@@ -18,14 +18,14 @@ impl BestMove {
     pub fn new(m: ChessMove) -> BestMove {
         BestMove {
             chess_move: m,
-            ponder_move: None
+            ponder_move: None,
         }
     }
 
     pub fn new_with_ponder(m: ChessMove, ponder: ChessMove) -> BestMove {
         BestMove {
             chess_move: m,
-            ponder_move: Some(ponder)
+            ponder_move: Some(ponder),
         }
     }
 
@@ -95,19 +95,30 @@ fn test_parse(s: &str, bm: BestMove) {
 
 #[test]
 fn test_bestmove_ponder() {
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-                              Square::make_square(Rank::Fourth, File::E), None);
-    let e7e5 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-                              Square::make_square(Rank::Fifth, File::E), None);
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
+    let e7e5 = ChessMove::new(
+        Square::make_square(Rank::Seventh, File::E),
+        Square::make_square(Rank::Fifth, File::E),
+        None,
+    );
 
-    test_parse("bestmove e2e4 ponder e7e5\n", BestMove::new_with_ponder(e2e4, e7e5));
+    test_parse(
+        "bestmove e2e4 ponder e7e5\n",
+        BestMove::new_with_ponder(e2e4, e7e5),
+    );
 }
 
 #[test]
 fn test_bestmove_noponder() {
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-                              Square::make_square(Rank::Fourth, File::E), None);
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
 
     test_parse("bestmove e2e4\n", BestMove::new(e2e4));
 }
-

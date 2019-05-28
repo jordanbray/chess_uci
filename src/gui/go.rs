@@ -14,7 +14,7 @@ pub struct Go {
     nodes: Option<u64>,
     mate: Option<u64>,
     movetime: Option<u64>,
-    infinite: bool
+    infinite: bool,
 }
 
 impl Go {
@@ -74,7 +74,7 @@ macro_rules! set_non_default {
         } else {
             $result.$val = $b.$val.clone();
         }
-    }
+    };
 }
 
 macro_rules! add_builder {
@@ -84,7 +84,7 @@ macro_rules! add_builder {
             result.$name = a.clone();
             result
         }
-    }
+    };
 }
 
 macro_rules! add_builder_option {
@@ -94,7 +94,7 @@ macro_rules! add_builder_option {
             result.$name = Some(a.clone());
             result
         }
-    }
+    };
 }
 
 impl Go {
@@ -259,5 +259,3 @@ named!(pub parse_go<&str, Go>, do_parse!(
         (go)
     )
 );
-
-

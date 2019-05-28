@@ -1,13 +1,13 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
-use parsers::*;
 use chess::ChessMove;
-use engine::score::{Score, parse_score};
+use engine::score::{parse_score, Score};
+use parsers::*;
 
 #[cfg(test)]
-use chess::{Square, Rank, File};
+use chess::{File, Rank, Square};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default)]
 pub struct Info {
@@ -102,7 +102,7 @@ macro_rules! set_non_default {
         } else {
             $result.$val = $b.$val.clone();
         }
-    }
+    };
 }
 
 macro_rules! add_builder {
@@ -112,7 +112,7 @@ macro_rules! add_builder {
             result.$name = a.clone();
             result
         }
-    }
+    };
 }
 
 macro_rules! add_builder_option {
@@ -122,7 +122,7 @@ macro_rules! add_builder_option {
             result.$name = Some(a.clone());
             result
         }
-    }
+    };
 }
 
 impl Info {
@@ -264,7 +264,6 @@ named!(parse_info_tb_hits<&str, Info>, do_parse!(
     )
 );
 
-
 named!(pub parse_info<&str, Info>, do_parse!(
         tag!("info") >>
         info: fold_many1!(
@@ -312,7 +311,7 @@ impl fmt::Display for Info {
         if let Some(score) = self.score {
             try!(write!(f, " {}", score.to_string().trim()));
         }
-    
+
         if let Some(nodes) = self.nodes {
             try!(write!(f, " nodes {}", nodes));
         }
@@ -358,11 +357,16 @@ fn test_info(s: &str, i: Info) {
 
 #[test]
 fn test_normal_info() {
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-                              Square::make_square(Rank::Fourth, File::E), None);
-    let e7e5 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-                              Square::make_square(Rank::Fifth, File::E), None);
-
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
+    let e7e5 = ChessMove::new(
+        Square::make_square(Rank::Seventh, File::E),
+        Square::make_square(Rank::Fifth, File::E),
+        None,
+    );
 
     test_info("info depth 2 seldepth 3 multipv 1 score cp 6 nodes 100 time 1 nps 1000 currmove e2e4 currmovenumber 1 tbhits 0 pv e2e4 e7e5\n",
               Info::pv(vec![e2e4, e7e5])

@@ -3,7 +3,7 @@ use super::eval::Eval;
 pub enum TtScore<T: Eval> {
     Min(T),
     Max(T),
-    Exact(T)
+    Exact(T),
 }
 
 impl<T: Eval> TtScore<T> {
@@ -11,7 +11,7 @@ impl<T: Eval> TtScore<T> {
         match self {
             TtScore::Min(x) => *x,
             TtScore::Max(_) => T::min_value(),
-            TtScore::Exact(x) => *x
+            TtScore::Exact(x) => *x,
         }
     }
 
@@ -32,7 +32,8 @@ impl<T: Eval> TtScore<T> {
                 } else {
                     None
                 }
-            }, TtScore::Max(x) => {
+            }
+            TtScore::Max(x) => {
                 if *x <= alpha {
                     Some(*x)
                 } else {
@@ -53,7 +54,7 @@ impl<T: Eval> TtScore<T> {
                 } else {
                     (*x, *x) // Skip search must trigger before this?
                 }
-            },
+            }
             TtScore::Max(x) => {
                 if beta < *x {
                     (alpha, beta)
@@ -90,7 +91,7 @@ fn skip_searching() {
     let exact_score = TtScore::Exact(16i32);
 
     let result = Some(16i32);
-    
+
     assert_eq!(exact_score.skip_search(-100, 100), result);
     assert_eq!(exact_score.skip_search(-100, 0), result);
     assert_eq!(exact_score.skip_search(100, 200), result);
@@ -119,15 +120,42 @@ fn update_alpha_beta() {
     let large_alpha = 100;
     let large_beta = 200;
 
-    assert_eq!(exact_score.update_alpha_beta(small_alpha, small_beta), (16i32, 16i32));
-    assert_eq!(exact_score.update_alpha_beta(middle_alpha, middle_beta), (16i32, 16i32));
-    assert_eq!(exact_score.update_alpha_beta(large_alpha, large_beta), (16i32, 16i32));
+    assert_eq!(
+        exact_score.update_alpha_beta(small_alpha, small_beta),
+        (16i32, 16i32)
+    );
+    assert_eq!(
+        exact_score.update_alpha_beta(middle_alpha, middle_beta),
+        (16i32, 16i32)
+    );
+    assert_eq!(
+        exact_score.update_alpha_beta(large_alpha, large_beta),
+        (16i32, 16i32)
+    );
 
-    assert_eq!(min_score.update_alpha_beta(small_alpha, small_beta), (16, 16)); // ??? Invalid Operation?
-    assert_eq!(min_score.update_alpha_beta(middle_alpha, middle_beta), (16, 100));
-    assert_eq!(min_score.update_alpha_beta(large_alpha, large_beta), (100, 200));
+    assert_eq!(
+        min_score.update_alpha_beta(small_alpha, small_beta),
+        (16, 16)
+    ); // ??? Invalid Operation?
+    assert_eq!(
+        min_score.update_alpha_beta(middle_alpha, middle_beta),
+        (16, 100)
+    );
+    assert_eq!(
+        min_score.update_alpha_beta(large_alpha, large_beta),
+        (100, 200)
+    );
 
-    assert_eq!(max_score.update_alpha_beta(small_alpha, small_beta), (-100, 0));
-    assert_eq!(max_score.update_alpha_beta(middle_alpha, middle_beta), (-100, 16));
-    assert_eq!(max_score.update_alpha_beta(large_alpha, large_beta), (16, 16)); // ??? Invalid operation?
+    assert_eq!(
+        max_score.update_alpha_beta(small_alpha, small_beta),
+        (-100, 0)
+    );
+    assert_eq!(
+        max_score.update_alpha_beta(middle_alpha, middle_beta),
+        (-100, 16)
+    );
+    assert_eq!(
+        max_score.update_alpha_beta(large_alpha, large_beta),
+        (16, 16)
+    ); // ??? Invalid operation?
 }

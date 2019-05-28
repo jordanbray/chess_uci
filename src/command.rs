@@ -1,8 +1,8 @@
+use engine::engine_command::EngineCommand;
+use error::Error;
+use gui::gui_command::GuiCommand;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
-use engine::engine_command::EngineCommand;
-use gui::gui_command::GuiCommand;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Command {
@@ -48,4 +48,3 @@ impl fmt::Display for Command {
         }
     }
 }
-

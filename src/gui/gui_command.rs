@@ -1,14 +1,14 @@
-use std::fmt;
-use std::str::FromStr;
+use chess::{Board, ChessMove};
 use error::Error;
 use nom::rest;
-use chess::{ChessMove, Board};
+use std::fmt;
+use std::str::FromStr;
 
 #[cfg(test)]
-use chess::{Rank, File, Piece, Square};
+use chess::{File, Piece, Rank, Square};
 
+use gui::go::{parse_go, Go};
 use parsers::*;
-use gui::go::{Go, parse_go};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum GuiCommand {
@@ -22,7 +22,7 @@ pub enum GuiCommand {
     Go(Go),
     Stop,
     PonderHit,
-    Quit
+    Quit,
 }
 
 named!(parse_uci<&str, GuiCommand>, do_parse!(
@@ -176,7 +176,7 @@ impl fmt::Display for GuiCommand {
             GuiCommand::IsReady => writeln!(f, "isready"),
             GuiCommand::SetOption(name, value) => match value {
                 None => writeln!(f, "setoption name {}", name),
-                Some(v) => writeln!(f, "setoption name {} value {}", name, v)
+                Some(v) => writeln!(f, "setoption name {} value {}", name, v),
             },
             GuiCommand::Register(code) => writeln!(f, "register {}", code),
             GuiCommand::UciNewGame => writeln!(f, "ucinewgame"),
@@ -184,20 +184,28 @@ impl fmt::Display for GuiCommand {
                 if pos == &Board::default() {
                     try!(write!(f, "position startpos"));
                 } else {
-                    try!(write!(f, "position fen {}", ""));
+                    try!(write!(f, "position fen {}", pos));
                 }
 
                 if moves.len() != 0 {
-                    writeln!(f, "{}", moves.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" "))
+                    writeln!(
+                        f,
+                        "{}",
+                        moves
+                            .iter()
+                            .map(|x| x.to_string())
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    )
                 } else {
                     writeln!(f, "")
                 }
-            },
+            }
             GuiCommand::Go(go) => {
                 try!(write!(f, "go"));
                 match go.get_ponder() {
                     Some(ref p) => try!(write!(f, "ponder {}", p)),
-                    None => {},
+                    None => {}
                 };
 
                 if go.get_wtime().is_some() {
@@ -232,13 +240,21 @@ impl fmt::Display for GuiCommand {
                 }
 
                 if go.get_search_moves().len() != 0 {
-                    try!(write!(f, " searchmoves {}", go.get_search_moves().iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" ")));
+                    try!(write!(
+                        f,
+                        " searchmoves {}",
+                        go.get_search_moves()
+                            .iter()
+                            .map(|x| x.to_string())
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    ));
                 }
                 writeln!(f, "")
             }
             GuiCommand::Stop => writeln!(f, "stop"),
             GuiCommand::PonderHit => writeln!(f, "ponderhit"),
-            GuiCommand::Quit => writeln!(f, "quit")
+            GuiCommand::Quit => writeln!(f, "quit"),
         }
     }
 }
@@ -261,20 +277,23 @@ fn test_parse_debug_on() {
 
 #[test]
 fn test_parse_debug_off() {
-    test_parse("debug off" , GuiCommand::Debug(false));
+    test_parse("debug off", GuiCommand::Debug(false));
 }
 
 #[test]
 fn test_parse_setoption_noval() {
-    test_parse("setoption name test",
-               GuiCommand::SetOption("test".to_string(), None));
+    test_parse(
+        "setoption name test",
+        GuiCommand::SetOption("test".to_string(), None),
+    );
 }
 
 #[test]
 fn test_parse_setoption_withval() {
-    test_parse("setoption name test value value",
-               GuiCommand::SetOption("test".to_string(),
-                                     Some("value".to_string())));
+    test_parse(
+        "setoption name test value value",
+        GuiCommand::SetOption("test".to_string(), Some("value".to_string())),
+    );
 }
 
 #[test]
@@ -309,49 +328,75 @@ fn test_quit() {
 
 #[test]
 fn test_parse_go_times() {
-    test_parse("go btime 100 wtime 100\n",
-               GuiCommand::Go(Go::wtime(100).combine(
-                             &Go::btime(100))));
+    test_parse(
+        "go btime 100 wtime 100\n",
+        GuiCommand::Go(Go::wtime(100).combine(&Go::btime(100))),
+    );
 }
 
 #[test]
 fn test_parse_startpos() {
-    test_parse("position startpos\n",
-               GuiCommand::Position(Board::default(), vec!()));
+    test_parse(
+        "position startpos\n",
+        GuiCommand::Position(Board::default(), vec![]),
+    );
 }
 #[test]
 fn test_parse_startpos_moves() {
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-                              Square::make_square(Rank::Fourth, File::E), None);
-    let e7e5 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-                              Square::make_square(Rank::Fifth, File::E), None);
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
+    let e7e5 = ChessMove::new(
+        Square::make_square(Rank::Seventh, File::E),
+        Square::make_square(Rank::Fifth, File::E),
+        None,
+    );
 
-    test_parse("position startpos moves e2e4 e7e5\n",
-               GuiCommand::Position(Board::default(), vec!(e2e4, e7e5)));
+    test_parse(
+        "position startpos moves e2e4 e7e5\n",
+        GuiCommand::Position(Board::default(), vec![e2e4, e7e5]),
+    );
 }
 
 #[test]
 fn test_position_fen() {
-    test_parse("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\n", GuiCommand::Position(Board::default(), vec!()));
+    test_parse(
+        "position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\n",
+        GuiCommand::Position(Board::default(), vec![]),
+    );
 }
 
 #[test]
 fn test_parse_position_fen_moves() {
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-                              Square::make_square(Rank::Fourth, File::E), None);
-    let e7e5 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-                              Square::make_square(Rank::Fifth, File::E), None);
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
+    let e7e5 = ChessMove::new(
+        Square::make_square(Rank::Seventh, File::E),
+        Square::make_square(Rank::Fifth, File::E),
+        None,
+    );
 
-    test_parse("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4 e7e5\n",
-               GuiCommand::Position(Board::default(), vec!(e2e4, e7e5)));
+    test_parse(
+        "position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4 e7e5\n",
+        GuiCommand::Position(Board::default(), vec![e2e4, e7e5]),
+    );
 }
 
 #[test]
 fn test_parse_queening_move() {
-    let queening = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-                                  Square::make_square(Rank::Eighth, File::E),
-                                  Some(Piece::Queen));
+    let queening = ChessMove::new(
+        Square::make_square(Rank::Seventh, File::E),
+        Square::make_square(Rank::Eighth, File::E),
+        Some(Piece::Queen),
+    );
 
-    test_parse("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e7e8q\n", GuiCommand::Position(Board::default(), vec!(queening)));
+    test_parse(
+        "position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e7e8q\n",
+        GuiCommand::Position(Board::default(), vec![queening]),
+    );
 }
-

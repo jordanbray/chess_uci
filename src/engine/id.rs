@@ -1,7 +1,7 @@
-use std::fmt;
-use std::str::FromStr;
 use error::Error;
 use nom::rest;
+use std::fmt;
+use std::str::FromStr;
 
 use parsers::*;
 
@@ -15,14 +15,14 @@ impl Id {
     pub fn name(name: &str) -> Id {
         Id {
             name: Some(name.to_string()),
-            author: None
+            author: None,
         }
     }
 
     pub fn author(author: &str) -> Id {
         Id {
             name: None,
-            author: Some(author.to_string())
+            author: Some(author.to_string()),
         }
     }
 }
@@ -52,7 +52,6 @@ named!(pub parse_engine_id<&str, Id>, do_parse!(
         (val)
     )
 );
-
 
 impl FromStr for Id {
     type Err = Error;
@@ -94,4 +93,3 @@ fn test_id_name() {
 fn test_id_author() {
     test_parse("id author Jordan Bray\n", Id::author("Jordan Bray"));
 }
-

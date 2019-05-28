@@ -1,6 +1,6 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
 use parsers::*;
 
@@ -9,7 +9,7 @@ pub enum Score {
     Cp(i64),
     Mate(i64),
     Lower(i64),
-    Upper(i64)
+    Upper(i64),
 }
 
 named!(parse_score_cp<&str, Score>, do_parse!(
@@ -56,11 +56,11 @@ named!(pub parse_score<&str, Score>, do_parse!(
 );
 
 impl FromStr for Score {
-     type Err = Error;
+    type Err = Error;
 
-     fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(parse_score(s)?.1)
-     }
+    }
 }
 
 impl fmt::Display for Score {

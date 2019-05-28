@@ -1,2 +1,2 @@
-pub mod gui_command;
 pub mod go;
+pub mod gui_command;

@@ -1,9 +1,17 @@
-use engine_base::EngineOptions;
+use super::engine_options::EngineOptions;
 use engine::Id;
-use engine_base::Search;
+use super::search::Search;
+use chess_uci::timer::timer::Timer;
 
-struct EngineBase<T: Search> {
+struct EngineBase<E: Eval, S: Search<E>> {
     options: EngineOptions,
     id: Id,
-    searcher: T,
+    searcher: S,
+    timer: Timer,
+}
+
+impl<E, S, T> EngineBase<E: Eval, S: Search<E>> {
+    pub fn new(timer: Timer, id: Id, options: Vec<EngineOption>) {
+        
+    }
 }

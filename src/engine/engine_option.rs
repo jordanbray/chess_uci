@@ -1,14 +1,14 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
+use engine::option_type::{parse_option_type, OptionType};
 use parsers::*;
-use engine::option_type::{OptionType, parse_option_type};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub struct EngineOption {
     name: String,
-    option_type: OptionType
+    option_type: OptionType,
 }
 
 named!(pub parse_engine_option<&str, EngineOption>, do_parse!(
@@ -26,7 +26,7 @@ impl EngineOption {
     pub fn new(name: String, option_type: OptionType) -> EngineOption {
         EngineOption {
             name: name,
-            option_type: option_type
+            option_type: option_type,
         }
     }
 
@@ -62,24 +62,35 @@ fn test_engine_option(s: &str, e: EngineOption) {
     assert_eq!(text, s.trim().to_string());
 }
 
-
 #[test]
 fn test_engine_option_contempt() {
-    test_engine_option("option name Contempt type spin default 0 min -100 max 100\n",
-                       EngineOption { name: "Contempt".to_string(),
-                                      option_type: OptionType::Spin(0, -100, 100) });
+    test_engine_option(
+        "option name Contempt type spin default 0 min -100 max 100\n",
+        EngineOption {
+            name: "Contempt".to_string(),
+            option_type: OptionType::Spin(0, -100, 100),
+        },
+    );
 }
 
 #[test]
 fn test_engine_option_with_spaces() {
-    test_engine_option("option name Debug Log File type string default\n",
-                       EngineOption { name: "Debug Log File".to_string(),
-                                      option_type: OptionType::Str("".to_string()) });
+    test_engine_option(
+        "option name Debug Log File type string default\n",
+        EngineOption {
+            name: "Debug Log File".to_string(),
+            option_type: OptionType::Str("".to_string()),
+        },
+    );
 }
 
 #[test]
 fn test_engine_button() {
-    test_engine_option("option name Clear Hash type button\n",
-                       EngineOption { name: "Clear Hash".to_string(),
-                                      option_type: OptionType::Button });
+    test_engine_option(
+        "option name Clear Hash type button\n",
+        EngineOption {
+            name: "Clear Hash".to_string(),
+            option_type: OptionType::Button,
+        },
+    );
 }

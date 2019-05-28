@@ -1,6 +1,6 @@
-use std::str::FromStr;
+use chess::{Board, ChessMove, File, Piece, Rank, Square};
 use nom::digit;
-use chess::{ChessMove, Square, Piece, Rank, File, Board};
+use std::str::FromStr;
 
 named!(pub parse_rank<&str, Rank>, do_parse!(
         r: alt!(
@@ -50,8 +50,6 @@ named!(pub parse_promotion_piece<&str, Option<Piece>>, do_parse!(
     )
 );
 
-
-
 named!(pub parse_move<&str, ChessMove>, do_parse!(
         s1: parse_square >>
         s2: parse_square >>
@@ -85,17 +83,18 @@ named!(pub parse_fen<&str, Board>, do_parse!(
             m1: take_while_s!(|y| "0123456789".contains(y)) >>
             space >>
             m2: take_while_s!(|y| "0123456789".contains(y)) >>
-            board: expr_opt!(Board::from_fen(board.to_owned() +
-                                             " " +
-                                             player +
-                                             " " +
-                                             castle +
-                                             " " +
-                                             ep +
-                                             " " +
-                                             m1 +
-                                             " " +
-                                             m2)) >>
+            board: expr_res!(
+                Board::from_str(
+                    &format!("{} {} {} {} {} {}",
+                         board,
+                         player,
+                         castle,
+                         ep,
+                         m1,
+                         m2
+                    )
+                )
+            ) >>
             (board)
         ) >>
         (x)
@@ -136,4 +135,3 @@ named!(pub parse_movelist<&str, Vec<ChessMove> >, do_parse!(
         (moves.to_vec())
     )
 );
-

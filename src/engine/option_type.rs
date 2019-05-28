@@ -1,8 +1,8 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
-use nom::{rest, alphanumeric};
+use nom::{alphanumeric, rest};
 use parsers::*;
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
@@ -57,7 +57,6 @@ named!(parse_combo_var_space<&str, &str>, do_parse!(
         (v)
     )
 );
-
 
 named!(parse_combo<&str, OptionType>, do_parse!(
         tag!("combo") >>
@@ -137,9 +136,9 @@ impl fmt::Display for OptionType {
                     try!(write!(f, " var {}", z));
                 }
                 writeln!(f, "")
-            },
+            }
             OptionType::Button => writeln!(f, "button"),
-            OptionType::Str(x) => writeln!(f, "string default {}", x)
+            OptionType::Str(x) => writeln!(f, "string default {}", x),
         }
     }
 }
@@ -160,13 +159,25 @@ fn test_option_type_check() {
 
 #[test]
 fn test_option_type_spin() {
-    test_option_type("type spin default 89 min 10 max 1000\n", OptionType::Spin(89, 10, 1000));
+    test_option_type(
+        "type spin default 89 min 10 max 1000\n",
+        OptionType::Spin(89, 10, 1000),
+    );
 }
 
 #[test]
 fn test_option_type_combo() {
-    test_option_type("type combo default Normal var Solid var Normal var Risky\n",
-                     OptionType::Combo("Normal".to_string(), vec!["Solid".to_string(), "Normal".to_string(), "Risky".to_string()]));
+    test_option_type(
+        "type combo default Normal var Solid var Normal var Risky\n",
+        OptionType::Combo(
+            "Normal".to_string(),
+            vec![
+                "Solid".to_string(),
+                "Normal".to_string(),
+                "Risky".to_string(),
+            ],
+        ),
+    );
 }
 
 #[test]
@@ -181,6 +192,8 @@ fn test_option_type_string_empty() {
 
 #[test]
 fn test_option_type_string_full() {
-    test_option_type("type string default Jordan Bray\n", OptionType::Str("Jordan Bray".to_string()));
+    test_option_type(
+        "type string default Jordan Bray\n",
+        OptionType::Str("Jordan Bray".to_string()),
+    );
 }
-

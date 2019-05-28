@@ -1,5 +1,5 @@
-use std::time::{Duration, Instant};
 use chess::Color;
+use std::time::{Duration, Instant};
 
 use gui::go::Go;
 use std::convert::Into;
@@ -70,25 +70,17 @@ impl Into<Go> for Timer {
         let zero = Duration::new(0, 0);
 
         if let Some(white) = self.white {
-            go = go.combine(
-                    &Go::wtime(
-                        duration_to_millis(
-                            white.remaining(self.start, self.player == Color::White)
-                        )
-                    )
-                );
+            go = go.combine(&Go::wtime(duration_to_millis(
+                white.remaining(self.start, self.player == Color::White),
+            )));
             if white.increment != zero {
                 go = go.combine(&Go::winc(duration_to_millis(white.get_increment())));
             }
         }
         if let Some(black) = self.black {
-            go = go.combine(
-                    &Go::btime(
-                        duration_to_millis(
-                            black.remaining(self.start, self.player == Color::Black)
-                        )
-                    )
-                );
+            go = go.combine(&Go::btime(duration_to_millis(
+                black.remaining(self.start, self.player == Color::Black),
+            )));
             if black.increment != zero {
                 go = go.combine(&Go::binc(duration_to_millis(black.get_increment())));
             }
@@ -102,10 +94,11 @@ impl Into<Go> for Timer {
             go = go.combine(&Go::movestogo(self.moves_to_go));
         }
 
-        if ((self.player == Color::White && self.white.is_none()) ||
-            (self.player == Color::Black && self.black.is_none())) &&
-           self.move_time.is_none() {
-            go = go.combine(&Go::infinite(true));    
+        if ((self.player == Color::White && self.white.is_none())
+            || (self.player == Color::Black && self.black.is_none()))
+            && self.move_time.is_none()
+        {
+            go = go.combine(&Go::infinite(true));
         }
 
         go
@@ -118,7 +111,11 @@ impl Timer {
     }
 
     pub fn get_increment(&self) -> Duration {
-        let timer = if self.player == Color::White { self.white } else { self.black };
+        let timer = if self.player == Color::White {
+            self.white
+        } else {
+            self.black
+        };
 
         if let Some(t) = timer {
             t.get_increment()
@@ -128,7 +125,11 @@ impl Timer {
     }
 
     pub fn get_time(&self) -> Duration {
-        let timer = if self.player == Color::White { self.white } else { self.black };
+        let timer = if self.player == Color::White {
+            self.white
+        } else {
+            self.black
+        };
 
         if let Some(t) = timer {
             t.get_time()
@@ -138,7 +139,11 @@ impl Timer {
     }
 
     pub fn remaining_for(&self, player: Color) -> Option<Duration> {
-        let timer = if player == Color::White { self.white } else { self.black };
+        let timer = if player == Color::White {
+            self.white
+        } else {
+            self.black
+        };
 
         if let Some(t) = timer {
             Some(t.remaining(self.start, self.player == player))
@@ -193,7 +198,7 @@ impl Timer {
         if self.player == Color::Black && self.moves_to_go > 0 {
             self.moves_to_go -= 1;
         }
-        
+
         let add_time = if self.moves_to_go == 0 {
             self.moves_to_go = self.start_moves_to_go;
             self.add_time_on_move_n
@@ -201,12 +206,16 @@ impl Timer {
             Duration::new(0, 0)
         };
         {
-            let clock = if self.player == Color::White { &mut self.white } else { &mut self.black };
+            let clock = if self.player == Color::White {
+                &mut self.white
+            } else {
+                &mut self.black
+            };
             if let Some(player_clock) = clock {
                 player_clock.made_move(self.start, add_time);
             }
         }
-        
+
         self.player = !self.player;
         self.start();
     }
@@ -230,42 +239,28 @@ impl Timer {
 
     pub fn new_from_go(go: &Go, player: Color) -> Timer {
         Timer::new_from_durations(
-            go.get_wtime()
-              .map(Duration::from_millis),
-
+            go.get_wtime().map(Duration::from_millis),
             go.get_winc()
-              .map(Duration::from_millis)
-              .unwrap_or(Duration::from_millis(0)),
-
-            go.get_btime()
-              .map(Duration::from_millis),
-
+                .map(Duration::from_millis)
+                .unwrap_or(Duration::from_millis(0)),
+            go.get_btime().map(Duration::from_millis),
             go.get_binc()
-              .map(Duration::from_millis)
-              .unwrap_or(Duration::from_millis(0)),
-
-            go.get_movetime()
-              .map(Duration::from_millis),
-
-            go.get_movestogo()
-              .unwrap_or(0),
-
-            go.get_movestogo()
-              .unwrap_or(0),
-
+                .map(Duration::from_millis)
+                .unwrap_or(Duration::from_millis(0)),
+            go.get_movetime().map(Duration::from_millis),
+            go.get_movestogo().unwrap_or(0),
+            go.get_movestogo().unwrap_or(0),
             if player == Color::White {
                 go.get_wtime()
-                  .map(Duration::from_millis)
-                  .unwrap_or(Duration::new(0, 0))
+                    .map(Duration::from_millis)
+                    .unwrap_or(Duration::new(0, 0))
             } else {
                 go.get_btime()
-                  .map(Duration::from_millis)
-                  .unwrap_or(Duration::new(0, 0))
+                    .map(Duration::from_millis)
+                    .unwrap_or(Duration::new(0, 0))
             },
-
             player,
-
-            Some(Instant::now())
+            Some(Instant::now()),
         )
     }
 
@@ -288,7 +283,8 @@ impl Timer {
             0,
             Duration::new(0, 0),
             Color::White,
-            None)
+            None,
+        )
     }
 
     pub fn new_with_increment(time: Duration, inc: Duration) -> Timer {
@@ -302,7 +298,8 @@ impl Timer {
             0,
             Duration::new(0, 0),
             Color::White,
-            None)
+            None,
+        )
     }
 
     pub fn new_static_move_time(time: Duration) -> Timer {
@@ -316,7 +313,8 @@ impl Timer {
             0,
             Duration::new(0, 0),
             Color::White,
-            None)
+            None,
+        )
     }
 
     pub fn new_from_durations(
@@ -329,22 +327,23 @@ impl Timer {
         start_moves_to_go: u64,
         add_time_on_move_n: Duration,
         player: Color,
-        start: Option<Instant>) -> Timer {
+        start: Option<Instant>,
+    ) -> Timer {
         Timer {
             white: wtime.map(|x| PlayerTimer {
                 time: x,
-                increment: winc
+                increment: winc,
             }),
             black: btime.map(|x| PlayerTimer {
                 time: x,
-                increment: binc
+                increment: binc,
             }),
             move_time: move_time,
             moves_to_go: moves_to_go,
             start_moves_to_go: start_moves_to_go,
             add_time_on_move_n: add_time_on_move_n,
             player: player,
-            start: start
+            start: start,
         }
     }
 }
@@ -361,7 +360,8 @@ fn test_with_increment_into_go() {
         0,
         Duration::new(0, 0),
         Color::White,
-        None);
+        None,
+    );
 
     let go = Go::default()
         .combine(&Go::wtime(5000))
@@ -377,23 +377,18 @@ fn test_without_increment_into_go() {
     let timer = Timer::new_without_increment(Duration::new(5, 0));
 
     let go = Go::default()
-         .combine(&Go::wtime(5000))
-         .combine(&Go::btime(5000));
+        .combine(&Go::wtime(5000))
+        .combine(&Go::btime(5000));
 
     assert_eq!(go, timer.into());
 }
-
 
 #[cfg(test)]
 use std::thread::sleep;
 
 #[cfg(test)]
 fn durations_within_5ms(x: Duration, y: Duration) -> bool {
-    let delta = if x > y {
-        x - y
-    } else {
-        y - x
-    };
+    let delta = if x > y { x - y } else { y - x };
 
     delta < Duration::from_millis(50)
 }
@@ -405,13 +400,22 @@ fn test_make_move_with_inc() {
 
     sleep(Duration::new(3, 0));
     timer.made_move();
-    assert!(durations_within_5ms(timer.white_remaining().unwrap(), Duration::new(3, 0)));
+    assert!(durations_within_5ms(
+        timer.white_remaining().unwrap(),
+        Duration::new(3, 0)
+    ));
 
     sleep(Duration::new(2, 0));
     timer.made_move();
-    assert!(durations_within_5ms(timer.black_remaining().unwrap(), Duration::new(4, 0)));
+    assert!(durations_within_5ms(
+        timer.black_remaining().unwrap(),
+        Duration::new(4, 0)
+    ));
 
     sleep(Duration::new(2, 0));
     timer.made_move();
-    assert!(durations_within_5ms(timer.white_remaining().unwrap(), Duration::new(2, 0)));
+    assert!(durations_within_5ms(
+        timer.white_remaining().unwrap(),
+        Duration::new(2, 0)
+    ));
 }

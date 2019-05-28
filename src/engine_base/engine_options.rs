@@ -1,10 +1,9 @@
-use engine::option_type::OptionType;
+use crate::error::Error;
 use engine::engine_option::EngineOption;
+use engine::option_type::OptionType;
 use std::collections::HashMap;
 use std::fmt;
-use crate::error::Error;
 use std::str::FromStr;
-
 
 #[derive(Clone, Default)]
 pub struct EngineOptions {
@@ -14,18 +13,21 @@ pub struct EngineOptions {
 
 impl EngineOptions {
     pub fn new<I>(options: I) -> EngineOptions
-            where I: IntoIterator<Item=EngineOption> {
+    where
+        I: IntoIterator<Item = EngineOption>,
+    {
         let mut e = EngineOptions::default();
 
         for x in options.into_iter() {
-            e.options.insert(x.get_name().clone(), x.get_option_type().clone());
+            e.options
+                .insert(x.get_name().clone(), x.get_option_type().clone());
         }
 
         e
     }
 
     fn get_engine_options(&self) -> Vec<EngineOption> {
-        let mut result = vec!();
+        let mut result = vec![];
         for (name, option_type) in &self.options {
             result.push(EngineOption::new(name.clone(), option_type.clone()));
         }
@@ -37,11 +39,13 @@ impl EngineOptions {
     }
 
     pub fn create_spin(&mut self, name: String, default: i64, min: i64, max: i64) {
-        self.options.insert(name, OptionType::Spin(default, min, max));
+        self.options
+            .insert(name, OptionType::Spin(default, min, max));
     }
 
     pub fn create_combo(&mut self, name: String, default: String, options: Vec<String>) {
-        self.options.insert(name, OptionType::Combo(default, options));
+        self.options
+            .insert(name, OptionType::Combo(default, options));
     }
 
     pub fn create_string(&mut self, name: String, default: String) {
@@ -93,11 +97,12 @@ impl fmt::Display for EngineOptions {
 
 impl FromStr for EngineOptions {
     type Err = Error;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let options: Result<Vec<EngineOption>, Error> = s.lines()
-                                                         .map(|v| EngineOption::from_str(&(v.to_string() + "\n")))
-                                                         .collect();
+        let options: Result<Vec<EngineOption>, Error> = s
+            .lines()
+            .map(|v| EngineOption::from_str(&(v.to_string() + "\n")))
+            .collect();
         Ok(Self::new(options?))
     }
 }
@@ -125,7 +130,6 @@ fn read_stockfish() -> Result<EngineOptions, Error> {
                              option name SyzygyProbeLimit type spin default 7 min 0 max 7\n")
 }
 
-
 #[test]
 fn read_defaults() {
     let eo = read_stockfish().unwrap();
@@ -148,4 +152,3 @@ fn read_defaults() {
     assert_eq!(eo.get_check("Syzygy50MoveRule"), true);
     assert_eq!(eo.get_spin("SyzygyProbeLimit"), 7);
 }
-

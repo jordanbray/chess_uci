@@ -1,6 +1,6 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
 use parsers::*;
 
@@ -8,7 +8,7 @@ use parsers::*;
 pub enum Registration {
     Good,
     Checking,
-    Error
+    Error,
 }
 
 named!(pub parse_registration<&str, Registration>, do_parse!(
@@ -36,7 +36,7 @@ impl fmt::Display for Registration {
         match self {
             Registration::Good => writeln!(f, "registration ok"),
             Registration::Checking => writeln!(f, "registration checking"),
-            Registration::Error => writeln!(f, "registration error")
+            Registration::Error => writeln!(f, "registration error"),
         }
     }
 }

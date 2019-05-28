@@ -1,7 +1,7 @@
 use nom::Err;
 use std::convert::From;
 use std::fmt;
-use std::io::{Error as IoError};
+use std::io::Error as IoError;
 use std::sync::mpsc::TryRecvError;
 
 #[derive(Debug, PartialEq)]

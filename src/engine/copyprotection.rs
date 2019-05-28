@@ -1,6 +1,6 @@
+use error::Error;
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
 
 use parsers::*;
 
@@ -8,7 +8,7 @@ use parsers::*;
 pub enum CopyProtection {
     Good,
     Checking,
-    Error
+    Error,
 }
 
 named!(pub parse_copyprotection<&str, CopyProtection>, do_parse!(
@@ -36,7 +36,7 @@ impl fmt::Display for CopyProtection {
         match self {
             CopyProtection::Good => writeln!(f, "copyprotection ok"),
             CopyProtection::Checking => writeln!(f, "copyprotection checking"),
-            CopyProtection::Error => writeln!(f, "copyprotection error")
+            CopyProtection::Error => writeln!(f, "copyprotection error"),
         }
     }
 }

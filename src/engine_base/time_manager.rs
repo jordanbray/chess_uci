@@ -1,6 +1,6 @@
-use std::time::{Instant, Duration};
-use crate::timer::timer::Timer;
 use super::eval::Eval;
+use crate::timer::timer::Timer;
+use std::time::{Duration, Instant};
 
 pub trait TimeManager<E: Eval> {
     fn continue_id(&mut self, last_eval: E, timer: &Timer, moves: u16) -> bool;
@@ -8,6 +8,12 @@ pub trait TimeManager<E: Eval> {
 }
 
 pub struct DefaultTimeManager;
+
+impl DefaultTimeManager {
+    pub fn new() -> DefaultTimeManager {
+        DefaultTimeManager
+    }
+}
 
 impl TimeManager<i32> for DefaultTimeManager {
     fn continue_id(&mut self, _last_eval: i32, timer: &Timer, moves: u16) -> bool {
@@ -29,7 +35,7 @@ impl TimeManager<i32> for DefaultTimeManager {
             }
 
             let now = Instant::now();
-            
+
             start + time_to_use < now
         } else {
             true

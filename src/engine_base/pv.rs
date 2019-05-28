@@ -1,8 +1,8 @@
-use chess::ChessMove;
 use arrayvec::ArrayVec;
+use chess::ChessMove;
 use nodrop::NoDrop;
-use std::ops::Index;
 use std::iter::IntoIterator;
+use std::ops::Index;
 
 const MAX_PLY: usize = 512;
 
@@ -12,7 +12,9 @@ pub struct Pv {
 
 impl Pv {
     pub fn new() -> Pv {
-        Pv { pv: NoDrop::new(ArrayVec::new()) }
+        Pv {
+            pv: NoDrop::new(ArrayVec::new()),
+        }
     }
 
     pub fn update(&mut self, chess_move: ChessMove, other: &Pv) {
@@ -53,14 +55,30 @@ impl IntoIterator for Pv {
     }
 }
 
+impl Clone for Pv {
+    fn clone(&self) -> Self {
+        Pv {
+            pv: NoDrop::new(self.pv.clone()),
+        }
+    }
+}
+
 #[cfg(test)]
-use chess::{Square, Rank, File};
+use chess::{File, Rank, Square};
 
 #[test]
 fn update() {
     let mut pv1 = Pv::new();
-    let e2e4 = ChessMove::new(Square::make_square(Rank::Second, File::E), Square::make_square(Rank::Fourth, File::E), None);
-    let d7d5 = ChessMove::new(Square::make_square(Rank::Seventh, File::D), Square::make_square(Rank::Fifth, File::D), None);
+    let e2e4 = ChessMove::new(
+        Square::make_square(Rank::Second, File::E),
+        Square::make_square(Rank::Fourth, File::E),
+        None,
+    );
+    let d7d5 = ChessMove::new(
+        Square::make_square(Rank::Seventh, File::D),
+        Square::make_square(Rank::Fifth, File::D),
+        None,
+    );
     let mut pv2 = Pv::new();
     pv2.push(d7d5);
     pv1.update(e2e4, &pv2);
