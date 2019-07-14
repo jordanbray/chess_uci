@@ -183,7 +183,6 @@ impl<E: Eval, V: Evaluate<E>> Search<E> for DefaultSearch<E, V> {
 use super::test_positions::{easy_tactic, super_easy_tactic};
 #[cfg(test)]
 use chess::ChessMove;
-
 #[cfg(test)]
 use super::evaluate::DefaultEvaluate;
 

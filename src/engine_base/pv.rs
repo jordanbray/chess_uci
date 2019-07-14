@@ -3,6 +3,7 @@ use chess::ChessMove;
 use nodrop::NoDrop;
 use std::iter::IntoIterator;
 use std::ops::Index;
+use crate::engine::best_move::BestMove;
 
 const MAX_PLY: usize = 512;
 
@@ -60,6 +61,12 @@ impl Clone for Pv {
         Pv {
             pv: NoDrop::new(self.pv.clone()),
         }
+    }
+}
+
+impl Into<BestMove> for &Pv {
+    fn into(self) -> BestMove {
+        BestMove::new(self[0])
     }
 }
 
