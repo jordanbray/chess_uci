@@ -1,5 +1,5 @@
-use nom::Err;
 use nom::error::ErrorKind;
+use nom::Err;
 use std::convert::From;
 use std::fmt;
 use std::io::Error as IoError;
@@ -16,7 +16,7 @@ pub enum Error {
     NoCommandError,
     Timeout,
     IncompleteParseError,
-    ParseError { text: String,  error: ErrorKind },
+    ParseError { text: String, error: ErrorKind },
 }
 
 impl From<IoError> for Error {
@@ -38,8 +38,14 @@ impl From<Err<(&str, ErrorKind)>> for Error {
     fn from(x: Err<(&str, ErrorKind)>) -> Error {
         match x {
             Err::Incomplete(_) => Error::IncompleteParseError,
-            Err::Error(y) => Error::ParseError { text: y.0.to_string(), error: y.1.clone() },
-            Err::Failure(y) => Error::ParseError { text: y.0.to_string(), error: y.1.clone() },
+            Err::Error(y) => Error::ParseError {
+                text: y.0.to_string(),
+                error: y.1.clone(),
+            },
+            Err::Failure(y) => Error::ParseError {
+                text: y.0.to_string(),
+                error: y.1.clone(),
+            },
         }
     }
 }
@@ -55,7 +61,9 @@ impl fmt::Display for Error {
             Error::NoCommandError => write!(f, "No comand could be read"),
             Error::EngineDeadError => write!(f, "Engine Dead"),
             Error::Timeout => write!(f, "Timeout"),
-            Error::ParseError { text, error } => write!(f, "Parse Error: {:?} on \"{}\"", error, text),
+            Error::ParseError { text, error } => {
+                write!(f, "Parse Error: {:?} on \"{}\"", error, text)
+            }
             Error::IncompleteParseError => write!(f, "Incomplete Data - Parse Error"),
         }
     }

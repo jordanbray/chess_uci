@@ -2,8 +2,8 @@ use error::Error;
 use std::fmt;
 use std::str::FromStr;
 
-use nom::combinator::rest;
 use nom::character::complete::alphanumeric1;
+use nom::combinator::rest;
 use parsers::*;
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
