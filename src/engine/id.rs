@@ -1,5 +1,5 @@
 use error::Error;
-use nom::rest;
+use nom::combinator::rest;
 use std::fmt;
 use std::str::FromStr;
 
@@ -48,7 +48,7 @@ named!(parse_engine_id_author<&str, Id>, do_parse!(
 );
 
 named!(pub parse_engine_id<&str, Id>, do_parse!(
-        val: alt_complete!(parse_engine_id_name | parse_engine_id_author) >>
+        val: alt!(complete!(parse_engine_id_name) | complete!(parse_engine_id_author)) >>
         (val)
     )
 );

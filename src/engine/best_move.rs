@@ -59,7 +59,7 @@ named!(parse_best_move_ponder<&str, BestMove>, do_parse!(
 );
 
 named!(pub parse_best_move<&str, BestMove>, do_parse!(
-        val: alt_complete!(parse_best_move_ponder | parse_best_move_noponder) >>
+        val: alt!(complete!(parse_best_move_ponder) | complete!(parse_best_move_noponder)) >>
         (val)
     )
 );

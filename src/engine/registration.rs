@@ -14,10 +14,10 @@ pub enum Registration {
 named!(pub parse_registration<&str, Registration>, do_parse!(
         tag!("registration") >>
         space >>
-        val: alt_complete!(
-                value!(Registration::Good, tag!("ok")) |
-                value!(Registration::Checking, tag!("checking")) |
-                value!(Registration::Error, tag!("error"))
+        val: alt!(
+                complete!(value!(Registration::Good, tag!("ok"))) |
+                complete!(value!(Registration::Checking, tag!("checking"))) |
+                complete!(value!(Registration::Error, tag!("error")))
             ) >>
         (val)
     )

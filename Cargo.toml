@@ -5,7 +5,7 @@ authors = ["Jordan Bray <jordanbray@gmail.com>"]
 
 [dependencies]
 chess = "3.1.0"
-nom = "4.0.0"
+nom = "5.0.1"
 num-traits = "0.2"
 arrayvec = "0.4.10"
 nodrop = "0.1.13"

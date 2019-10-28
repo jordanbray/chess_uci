@@ -1,12 +1,12 @@
 use nom::Err;
+use nom::error::ErrorKind;
 use std::convert::From;
 use std::fmt;
 use std::io::Error as IoError;
 use std::sync::mpsc::TryRecvError;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Error {
-    ParseError,
     SpawnError,
     SendError,
     RecvError,
@@ -15,12 +15,8 @@ pub enum Error {
     EngineDeadError,
     NoCommandError,
     Timeout,
-}
-
-impl<'a> From<Err<&'a str>> for Error {
-    fn from(_: Err<&'a str>) -> Error {
-        Error::ParseError
-    }
+    IncompleteParseError,
+    ParseError { text: String,  error: ErrorKind },
 }
 
 impl From<IoError> for Error {
@@ -38,10 +34,19 @@ impl From<TryRecvError> for Error {
     }
 }
 
+impl From<Err<(&str, ErrorKind)>> for Error {
+    fn from(x: Err<(&str, ErrorKind)>) -> Error {
+        match x {
+            Err::Incomplete(_) => Error::IncompleteParseError,
+            Err::Error(y) => Error::ParseError { text: y.0.to_string(), error: y.1.clone() },
+            Err::Failure(y) => Error::ParseError { text: y.0.to_string(), error: y.1.clone() },
+        }
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::ParseError => write!(f, "Parse Error"),
             Error::SpawnError => write!(f, "Spawn Error"),
             Error::SendError => write!(f, "Send Error"),
             Error::RecvError => write!(f, "Recv Error"),
@@ -50,6 +55,8 @@ impl fmt::Display for Error {
             Error::NoCommandError => write!(f, "No comand could be read"),
             Error::EngineDeadError => write!(f, "Engine Dead"),
             Error::Timeout => write!(f, "Timeout"),
+            Error::ParseError { text, error } => write!(f, "Parse Error: {:?} on \"{}\"", error, text),
+            Error::IncompleteParseError => write!(f, "Incomplete Data - Parse Error"),
         }
     }
 }

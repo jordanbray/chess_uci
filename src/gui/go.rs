@@ -240,19 +240,19 @@ named!(parse_go_searchmoves<&str, Go>, do_parse!(
 named!(pub parse_go<&str, Go>, do_parse!(
         tag!("go") >>
         go: fold_many1!(
-            alt_complete!(
-                parse_go_wtime |
-                parse_go_btime |
-                parse_go_winc |
-                parse_go_binc |
-                parse_go_movestogo |
-                parse_go_depth |
-                parse_go_nodes |
-                parse_go_mate |
-                parse_go_movetime |
-                parse_go_infinite |
-                parse_go_ponder |
-                parse_go_searchmoves
+            alt!(
+                complete!(parse_go_wtime) |
+                complete!(parse_go_btime) |
+                complete!(parse_go_winc) |
+                complete!(parse_go_binc) |
+                complete!(parse_go_movestogo) |
+                complete!(parse_go_depth) |
+                complete!(parse_go_nodes) |
+                complete!(parse_go_mate) |
+                complete!(parse_go_movetime) |
+                complete!(parse_go_infinite) |
+                complete!(parse_go_ponder) |
+                complete!(parse_go_searchmoves)
             ),
             Go::default(),
             |acc: Go, item: Go| acc.combine(&item)) >>

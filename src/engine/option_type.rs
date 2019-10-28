@@ -2,7 +2,8 @@ use error::Error;
 use std::fmt;
 use std::str::FromStr;
 
-use nom::{alphanumeric, rest};
+use nom::combinator::rest;
+use nom::character::complete::alphanumeric1;
 use parsers::*;
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
@@ -19,8 +20,8 @@ named!(parse_check<&str, OptionType>, do_parse!(
         space >>
         tag!("default") >>
         space >>
-        v: alt_complete!(value!(true, tag!("true")) |
-                         value!(false, tag!("false"))) >>
+        v: alt!(complete!(value!(true, tag!("true"))) |
+                complete!(value!(false, tag!("false")))) >>
         (OptionType::Check(v))
     )
 );
@@ -46,7 +47,7 @@ named!(parse_spin<&str, OptionType>, do_parse!(
 named!(parse_combo_var<&str, &str>, do_parse!(
         tag!("var") >>
         space >>
-        x: alphanumeric >>
+        x: alphanumeric1 >>
         (x)
     )
 );
@@ -63,10 +64,10 @@ named!(parse_combo<&str, OptionType>, do_parse!(
         space >>
         tag!("default") >>
         space >>
-        v: alphanumeric >>
+        v: alphanumeric1 >>
         space >>
         options: fold_many1!(
-            alt_complete!(parse_combo_var_space | parse_combo_var),
+            alt!(complete!(parse_combo_var_space) | complete!(parse_combo_var)),
             Vec::new(),
             |mut acc: Vec<String>, item: &str| {
                 acc.push(item.to_string());
@@ -99,7 +100,7 @@ named!(parse_string<&str, OptionType>, do_parse!(
         tag!("string") >>
         space >>
         tag!("default") >>
-        v: alt_complete!(parse_somestring | parse_nostring) >>
+        v: alt!(complete!(parse_somestring) | complete!(parse_nostring)) >>
         (v)
     )
 );
@@ -107,11 +108,11 @@ named!(parse_string<&str, OptionType>, do_parse!(
 named!(pub parse_option_type<&str, OptionType>, do_parse!(
         tag!("type") >>
         space >>
-        v: alt_complete!(parse_check |
-                         parse_spin |
-                         parse_combo |
-                         parse_button |
-                         parse_string) >>
+        v: alt!(complete!(parse_check) |
+                complete!(parse_spin) |
+                complete!(parse_combo) |
+                complete!(parse_button) |
+                complete!(parse_string)) >>
         (v)
     )
 );

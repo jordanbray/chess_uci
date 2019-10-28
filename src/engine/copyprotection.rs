@@ -14,10 +14,10 @@ pub enum CopyProtection {
 named!(pub parse_copyprotection<&str, CopyProtection>, do_parse!(
         tag!("copyprotection") >>
         space >>
-        val: alt_complete!(
-                value!(CopyProtection::Good, tag!("ok")) |
-                value!(CopyProtection::Checking, tag!("checking")) |
-                value!(CopyProtection::Error, tag!("error"))
+        val: alt!(
+                complete!(value!(CopyProtection::Good, tag!("ok"))) |
+                complete!(value!(CopyProtection::Checking, tag!("checking"))) |
+                complete!(value!(CopyProtection::Error, tag!("error")))
             ) >>
         (val)
     )

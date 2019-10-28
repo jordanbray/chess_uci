@@ -1,6 +1,6 @@
 use chess::{Board, ChessMove};
 use error::Error;
-use nom::rest;
+use nom::combinator::rest;
 use std::fmt;
 use std::str::FromStr;
 
@@ -138,25 +138,25 @@ named!(parse_position_moves_empty<&str, Vec<ChessMove>>, do_parse!(
 named!(parse_position<&str, GuiCommand>, do_parse!(
         tag!("position") >>
         space >>
-        board: alt_complete!(parse_position_fen | parse_position_startpos) >>
-        moves: alt_complete!(parse_position_moves | parse_position_moves_empty) >>
+        board: alt!(complete!(parse_position_fen) | complete!(parse_position_startpos)) >>
+        moves: alt!(complete!(parse_position_moves) | complete!(parse_position_moves_empty)) >>
         (GuiCommand::Position(board, moves))
     )
 );
 
-named!(parse_all<&str, GuiCommand>, alt_complete!(
-        parse_ucinewgame |
-        parse_uci |
-        parse_debug |
-        parse_isready |
-        parse_setoption_value |
-        parse_setoption_novalue |
-        parse_register |
-        parse_stop |
-        parse_ponderhit |
-        parse_quit |
-        parse_gui_go |
-        parse_position
+named!(parse_all<&str, GuiCommand>, alt!(
+        complete!(parse_ucinewgame) |
+        complete!(parse_uci) |
+        complete!(parse_debug) |
+        complete!(parse_isready) |
+        complete!(parse_setoption_value) |
+        complete!(parse_setoption_novalue) |
+        complete!(parse_register) |
+        complete!(parse_stop) |
+        complete!(parse_ponderhit) |
+        complete!(parse_quit) |
+        complete!(parse_gui_go) |
+        complete!(parse_position)
     )
 );
 

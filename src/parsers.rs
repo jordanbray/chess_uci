@@ -1,5 +1,5 @@
 use chess::{Board, ChessMove, File, Piece, Rank, Square};
-use nom::digit;
+use nom::character::complete::digit1;
 use std::str::FromStr;
 
 named!(pub parse_rank<&str, Rank>, do_parse!(
@@ -40,11 +40,11 @@ named!(pub parse_square<&str, Square>, do_parse!(
 );
 
 named!(pub parse_promotion_piece<&str, Option<Piece>>, do_parse!(
-        p: opt!(alt_complete!(
-            value!(Piece::Knight, tag!("n")) |
-            value!(Piece::Bishop, tag!("b")) |
-            value!(Piece::Rook, tag!("r")) |
-            value!(Piece::Queen, tag!("q"))
+        p: opt!(alt!(
+            complete!(value!(Piece::Knight, tag!("n"))) |
+            complete!(value!(Piece::Bishop, tag!("b"))) |
+            complete!(value!(Piece::Rook, tag!("r"))) |
+            complete!(value!(Piece::Queen, tag!("q")))
         )) >>
         (p)
     )
@@ -83,28 +83,23 @@ named!(pub parse_fen<&str, Board>, do_parse!(
             m1: take_while!(|y| "0123456789".contains(y)) >>
             space >>
             m2: take_while!(|y| "0123456789".contains(y)) >>
-            board: expr_res!(
-                Board::from_str(
-                    &format!("{} {} {} {} {} {}",
+            (Board::from_str(&format!("{} {} {} {} {} {}",
                          board,
                          player,
                          castle,
                          ep,
                          m1,
                          m2
-                    )
-                )
-            ) >>
-            (board)
+                    )).map_err(|_| nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify))))
         ) >>
-        (x)
+        (x?)
     )
 );
 
 named!(
     pub integer<&str, u64>,
     map_res!(
-        digit,
+        digit1,
         u64::from_str
     )
 );
@@ -115,7 +110,7 @@ named!(
         recognize!(
             do_parse!(
                 opt!(tag!("-")) >>
-                digit >>
+                digit1 >>
                 ()
             )
         ),
@@ -125,7 +120,7 @@ named!(
 
 named!(pub parse_movelist<&str, Vec<ChessMove> >, do_parse!(
         moves: fold_many1!(
-            alt_complete!(parse_move_space | parse_move),
+            alt!(complete!(parse_move_space) | complete!(parse_move)),
             Vec::new(),
             |mut acc: Vec<ChessMove>, item: ChessMove| {
                 acc.push(item);

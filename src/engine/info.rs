@@ -267,17 +267,17 @@ named!(parse_info_tb_hits<&str, Info>, do_parse!(
 named!(pub parse_info<&str, Info>, do_parse!(
         tag!("info") >>
         info: fold_many1!(
-            alt_complete!(parse_info_pv |
-                          parse_info_depth |
-                          parse_info_seldepth |
-                          parse_info_time |
-                          parse_info_nodes |
-                          parse_info_multi_pv |
-                          parse_info_score |
-                          parse_info_cur_move |
-                          parse_info_cur_move_number |
-                          parse_info_nps |
-                          parse_info_tb_hits),
+            alt!(complete!(parse_info_pv) |
+                 complete!(parse_info_depth) |
+                 complete!(parse_info_seldepth) |
+                 complete!(parse_info_time) |
+                 complete!(parse_info_nodes) |
+                 complete!(parse_info_multi_pv) |
+                 complete!(parse_info_score) |
+                 complete!(parse_info_cur_move) |
+                 complete!(parse_info_cur_move_number) |
+                 complete!(parse_info_nps) |
+                 complete!(parse_info_tb_hits)),
             Info::default(),
             |acc: Info, next: Info| acc.combine(&next)) >>
         (info)

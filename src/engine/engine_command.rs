@@ -77,14 +77,14 @@ named!(parse_engine_command_engine_option<&str, EngineCommand>, do_parse!(
 );
 
 named!(parse_engine_command<&str, EngineCommand>, do_parse!(
-        value: alt_complete!(parse_engine_command_id |
-                             parse_engine_command_uciok |
-                             parse_engine_command_readyok |
-                             parse_engine_command_best_move |
-                             parse_engine_command_copy_protection |
-                             parse_engine_command_registration |
-                             parse_engine_command_info |
-                             parse_engine_command_engine_option) >>
+        value: alt!(complete!(parse_engine_command_id) |
+                    complete!(parse_engine_command_uciok) |
+                    complete!(parse_engine_command_readyok) |
+                    complete!(parse_engine_command_best_move) |
+                    complete!(parse_engine_command_copy_protection) |
+                    complete!(parse_engine_command_registration) |
+                    complete!(parse_engine_command_info) |
+                    complete!(parse_engine_command_engine_option)) >>
         (value)
     )
 );

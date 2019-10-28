@@ -49,10 +49,10 @@ named!(parse_score_upper<&str, Score>, do_parse!(
 named!(pub parse_score<&str, Score>, do_parse!(
         tag!("score") >>
         space >>
-        v: alt_complete!(parse_score_cp |
-                         parse_score_mate |
-                         parse_score_upper |
-                         parse_score_lower) >>
+        v: alt!(complete!(parse_score_cp) |
+                complete!(parse_score_mate) |
+                complete!(parse_score_upper) |
+                complete!(parse_score_lower)) >>
         (v)
     )
 );
