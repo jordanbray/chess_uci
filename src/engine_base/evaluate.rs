@@ -1,6 +1,6 @@
 use super::eval::Eval;
 use super::search_window::SearchParams;
-use chess::{Board, Color, Piece};
+use chess::{Color, Piece};
 use std::default::Default;
 
 pub trait Evaluate<E: Eval> {
@@ -63,6 +63,8 @@ impl Default for DefaultEvaluate {
 
 #[cfg(test)]
 use super::search_window::AlphaBetaSearchParams;
+#[cfg(test)]
+use chess::Board;
 
 #[test]
 fn should_be_equal() {

@@ -72,17 +72,17 @@ named!(pub non_newline_space<&str, &str>, eat_separator!(" \t\r"));
 
 named!(pub parse_fen<&str, Board>, do_parse!(
         x: do_parse!(
-            board: take_while_s!(|y| "pPnNbBrRqQkK12345678/".contains(y)) >>
+            board: take_while!(|y| "pPnNbBrRqQkK12345678/".contains(y)) >>
             space >>
             player: alt!(tag!("w") | tag!("b")) >>
             space >>
-            castle: take_while_s!(|y| "-kKqQ".contains(y)) >>
+            castle: take_while!(|y| "-kKqQ".contains(y)) >>
             space >>
-            ep: take_while_s!(|y| "abcdefgh12345678-".contains(y)) >>
+            ep: take_while!(|y| "abcdefgh12345678-".contains(y)) >>
             space >>
-            m1: take_while_s!(|y| "0123456789".contains(y)) >>
+            m1: take_while!(|y| "0123456789".contains(y)) >>
             space >>
-            m2: take_while_s!(|y| "0123456789".contains(y)) >>
+            m2: take_while!(|y| "0123456789".contains(y)) >>
             board: expr_res!(
                 Board::from_str(
                     &format!("{} {} {} {} {} {}",

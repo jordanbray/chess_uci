@@ -65,7 +65,7 @@ impl<E: Eval, T: TimeManager<E>, S: Search<E>> IterativeDeepening
                 .combine(&Info::depth(depth.try_into().unwrap()))
                 .combine(&Info::score(eval.into()))
                 .combine(&Info::pv(pv.clone().into_iter().collect()));
-            write!(writer, "{}", info);
+            write!(writer, "{}", info).expect("I must be able to send data to the GUI.");
 
             if !self.time_manager.continue_id(eval, &self.timer, moves_made) {
                 break;
