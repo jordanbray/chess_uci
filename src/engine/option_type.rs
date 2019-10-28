@@ -126,14 +126,14 @@ impl FromStr for OptionType {
 
 impl fmt::Display for OptionType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "type "));
+        write!(f, "type ")?;
         match self {
             OptionType::Check(x) => writeln!(f, "check default {}", x),
             OptionType::Spin(x, y, z) => writeln!(f, "spin default {} min {} max {}", x, y, z),
             OptionType::Combo(x, y) => {
-                try!(write!(f, "combo default {}", x));
+                write!(f, "combo default {}", x)?;
                 for z in y.into_iter() {
-                    try!(write!(f, " var {}", z));
+                    write!(f, " var {}", z)?;
                 }
                 writeln!(f, "")
             }

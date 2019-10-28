@@ -182,9 +182,9 @@ impl fmt::Display for GuiCommand {
             GuiCommand::UciNewGame => writeln!(f, "ucinewgame"),
             GuiCommand::Position(pos, moves) => {
                 if pos == &Board::default() {
-                    try!(write!(f, "position startpos"));
+                    write!(f, "position startpos")?;
                 } else {
-                    try!(write!(f, "position fen {}", pos));
+                    write!(f, "position fen {}", pos)?;
                 }
 
                 if moves.len() != 0 {
@@ -202,45 +202,45 @@ impl fmt::Display for GuiCommand {
                 }
             }
             GuiCommand::Go(go) => {
-                try!(write!(f, "go"));
+                write!(f, "go")?;
                 match go.get_ponder() {
-                    Some(ref p) => try!(write!(f, "ponder {}", p)),
+                    Some(ref p) => write!(f, "ponder {}", p)?,
                     None => {}
                 };
 
                 if go.get_wtime().is_some() {
-                    try!(write!(f, " wtime {}", go.get_wtime().unwrap()));
+                    write!(f, " wtime {}", go.get_wtime().unwrap())?;
                 }
                 if go.get_btime().is_some() {
-                    try!(write!(f, " btime {}", go.get_btime().unwrap()));
+                    write!(f, " btime {}", go.get_btime().unwrap())?;
                 }
                 if go.get_winc().is_some() {
-                    try!(write!(f, " winc {}", go.get_winc().unwrap()));
+                    write!(f, " winc {}", go.get_winc().unwrap())?;
                 }
                 if go.get_binc().is_some() {
-                    try!(write!(f, " binc {}", go.get_binc().unwrap()));
+                    write!(f, " binc {}", go.get_binc().unwrap())?;
                 }
                 if go.get_movestogo().is_some() {
-                    try!(write!(f, " movestogo {}", go.get_movestogo().unwrap()));
+                    write!(f, " movestogo {}", go.get_movestogo().unwrap())?;
                 }
                 if go.get_depth().is_some() {
-                    try!(write!(f, " depth {}", go.get_depth().unwrap()));
+                    write!(f, " depth {}", go.get_depth().unwrap())?;
                 }
                 if go.get_nodes().is_some() {
-                    try!(write!(f, " nodes {}", go.get_nodes().unwrap()));
+                    write!(f, " nodes {}", go.get_nodes().unwrap())?;
                 }
                 if go.get_mate().is_some() {
-                    try!(write!(f, " mate {}", go.get_mate().unwrap()));
+                    write!(f, " mate {}", go.get_mate().unwrap())?;
                 }
                 if go.get_movetime().is_some() {
-                    try!(write!(f, " movetime {}", go.get_movetime().unwrap()));
+                    write!(f, " movetime {}", go.get_movetime().unwrap())?;
                 }
                 if go.get_infinite() {
-                    try!(write!(f, " infinite"));
+                    write!(f, " infinite")?;
                 }
 
                 if go.get_search_moves().len() != 0 {
-                    try!(write!(
+                    write!(
                         f,
                         " searchmoves {}",
                         go.get_search_moves()
@@ -248,7 +248,7 @@ impl fmt::Display for GuiCommand {
                             .map(|x| x.to_string())
                             .collect::<Vec<String>>()
                             .join(" ")
-                    ));
+                    )?;
                 }
                 writeln!(f, "")
             }

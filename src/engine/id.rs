@@ -64,11 +64,11 @@ impl FromStr for Id {
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.name {
-            Some(ref x) => try!(writeln!(f, "id name {}", x)),
+            Some(ref x) => writeln!(f, "id name {}", x)?,
             None => {}
         }
         match self.author {
-            Some(ref x) => try!(writeln!(f, "id author {}", x)),
+            Some(ref x) => writeln!(f, "id author {}", x)?,
             None => {}
         }
         write!(f, "")

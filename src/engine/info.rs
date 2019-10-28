@@ -294,30 +294,30 @@ impl FromStr for Info {
 
 impl fmt::Display for Info {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "info"));
+        write!(f, "info")?;
 
         if let Some(depth) = self.depth {
-            try!(write!(f, " depth {}", depth));
+            write!(f, " depth {}", depth)?;
         }
 
         if let Some(seldepth) = self.seldepth {
-            try!(write!(f, " seldepth {}", seldepth));
+            write!(f, " seldepth {}", seldepth)?;
         }
 
         if let Some(mpv) = self.multi_pv {
-            try!(write!(f, " multipv {}", mpv));
+            write!(f, " multipv {}", mpv)?;
         }
 
         if let Some(score) = self.score {
-            try!(write!(f, " {}", score.to_string().trim()));
+            write!(f, " {}", score.to_string().trim())?;
         }
 
         if let Some(nodes) = self.nodes {
-            try!(write!(f, " nodes {}", nodes));
+            write!(f, " nodes {}", nodes)?;
         }
 
         if let Some(time) = self.time {
-            try!(write!(f, " time {}", time));
+            write!(f, " time {}", time)?;
         }
 
         if let Some(nps) = self.nps {
@@ -325,11 +325,11 @@ impl fmt::Display for Info {
         }
 
         if let Some(cur_move) = self.cur_move {
-            try!(write!(f, " currmove {}", cur_move));
+            write!(f, " currmove {}", cur_move)?;
         }
 
         if let Some(cur_move_number) = self.cur_move_number {
-            try!(write!(f, " currmovenumber {}", cur_move_number));
+            write!(f, " currmovenumber {}", cur_move_number)?;
         }
 
         if let Some(tb_hits) = self.tb_hits {
@@ -337,9 +337,9 @@ impl fmt::Display for Info {
         }
 
         if self.pv.len() > 0 {
-            try!(write!(f, " pv"));
+            write!(f, " pv")?;
             for x in self.pv.iter() {
-                try!(write!(f, " {}", x));
+                write!(f, " {}", x)?;
             }
         }
         writeln!(f, "")

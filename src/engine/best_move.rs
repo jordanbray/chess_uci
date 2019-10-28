@@ -74,9 +74,9 @@ impl FromStr for BestMove {
 
 impl fmt::Display for BestMove {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "bestmove {}", self.chess_move));
+        write!(f, "bestmove {}", self.chess_move)?;
         match self.ponder_move {
-            Some(x) => try!(write!(f, " ponder {}", x)),
+            Some(x) => write!(f, " ponder {}", x)?,
             None => {}
         };
 
