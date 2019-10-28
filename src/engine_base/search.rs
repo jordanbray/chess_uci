@@ -7,6 +7,7 @@ use chess::{Board, Color, MoveGen};
 use super::eval::Eval;
 use super::evaluate::Evaluate;
 use super::pv::Pv;
+use super::search_window::{SearchParams, AlphaBetaSearchParams};
 
 //use super::tt_entry::TtEntry;
 
@@ -32,121 +33,72 @@ impl<E: Eval, V: Evaluate<E>> DefaultSearch<E, V> {
         }
     }
 
-    pub fn qsearch(
-        &mut self,
-        board: Board,
-        mut alpha: E,
-        mut beta: E,
-        depth: i16,
-        pv: &mut Pv,
-    ) -> E {
-        alpha = alpha.add_depth(-1);
-        beta = beta.add_depth(-1);
-        let stand_pat = if board.side_to_move() == Color::White {
+    pub fn qsearch(&mut self, sp: &mut impl SearchParams<E>) -> E {
+        let stand_pat = if sp.board().side_to_move() == Color::White {
             E::one()
         } else {
             -E::one()
-        } * self.evaluator.evaluate(board, alpha, beta);
+        } * self.evaluator.evaluate(sp);
 
-        if stand_pat >= beta {
-            return beta;
+        if stand_pat >= sp.beta() {
+            return sp.beta().add_depth(1);
         }
 
-        if stand_pat > alpha {
-            alpha = stand_pat;
+        if stand_pat > sp.alpha() {
+            sp.set_alpha(stand_pat);
         }
 
-        let mut child_pv = Pv::new();
-
-        let mut movegen = MoveGen::new_legal(&board);
-        let targets = board.color_combined(!board.side_to_move());
+        let mut movegen = MoveGen::new_legal(sp.board());
+        let targets = sp.board().color_combined(!sp.board().side_to_move());
         movegen.set_iterator_mask(*targets);
 
         for m in movegen {
-            child_pv.clear();
-            let score = -self
-                .qsearch(
-                    board.make_move_new(m),
-                    -beta,
-                    -alpha,
-                    depth - 1,
-                    &mut child_pv,
-                )
-                .add_depth(1);
-            if score >= beta {
-                return beta;
+            let mut child_search = sp.lower_depth(m);
+            let score = -self.qsearch(&mut child_search);
+            if score >= sp.beta() {
+                return sp.beta().add_depth(1);
             }
-            if score > alpha {
-                alpha = score;
-                pv.update(m, &child_pv);
+            if score > sp.alpha() {
+                sp.set_alpha(sp.alpha());
+                sp.update_pv(m, child_search);
             }
         }
 
-        return alpha;
+        return sp.alpha().add_depth(1);
     }
 
-    fn search_line(
-        &mut self,
-        board: Board,
-        mut alpha: E,
-        mut beta: E,
-        depth: i16,
-        pv: &mut Pv,
-    ) -> E {
-        let mut child_pv = Pv::new();
-
-        if depth <= 0 {
-            return self.qsearch(board, alpha, beta, depth, &mut child_pv);
+    fn search_line(&mut self, sp: &mut impl SearchParams<E>) -> E {
+        if sp.depth() <= 0 {
+            return self.qsearch(sp);
         }
 
-        alpha = alpha.add_depth(-1);
-        beta = beta.add_depth(-1);
-
-        let mut movegen = MoveGen::new_legal(&board);
+        let mut movegen = MoveGen::new_legal(sp.board());
         let mut best_score;
         if let Some(first_move) = movegen.next() {
-            best_score = -self
-                .search_line(
-                    board.make_move_new(first_move),
-                    -beta,
-                    -alpha,
-                    depth - 1,
-                    &mut child_pv,
-                )
-                .add_depth(1);
-            if best_score > alpha {
-                pv.update(first_move, &child_pv);
+            let mut child_search = sp.lower_depth(first_move);
+            best_score = -self.search_line(&mut child_search);
+            if best_score > sp.alpha() {
+                sp.update_pv(first_move, child_search);
 
-                if best_score >= beta {
-                    return best_score;
+                if best_score >= sp.beta() {
+                    return best_score.add_depth(1);
                 }
-                alpha = best_score;
+                sp.set_alpha(best_score);
             }
         } else {
             return E::new_mate(0, Color::White);
         }
 
         for m in movegen {
-            child_pv.clear();
-            let new_board = board.make_move_new(m);
-            let mut score = -self
-                .search_line(
-                    new_board,
-                    -alpha - E::one(),
-                    -alpha,
-                    depth - 1,
-                    &mut child_pv,
-                )
-                .add_depth(1);
-            if score > alpha && score < beta {
-                child_pv.clear();
-                score = -self
-                    .search_line(new_board, -beta, -alpha, depth - 1, &mut child_pv)
-                    .add_depth(1);
-                if score > alpha {
-                    pv.update(m, &child_pv);
+            let mut child_search_zw = sp.lower_depth_into_null_window(m);
+            let mut score = -self.search_line(&mut child_search_zw);
 
-                    alpha = score;
+            if score > sp.alpha() && score < sp.beta() {
+                let mut child_search = sp.lower_depth(m);
+                score = -self.search_line(&mut child_search);
+                if score > sp.alpha() {
+                    sp.update_pv(m, child_search);
+                    sp.set_alpha(score);
                 }
             }
 
@@ -155,22 +107,22 @@ impl<E: Eval, V: Evaluate<E>> DefaultSearch<E, V> {
             }
 
             if score > best_score {
-                if score >= beta {
-                    return score;
+                if score >= sp.beta() {
+                    return score.add_depth(1);
                 }
                 best_score = score;
             }
         }
 
-        return best_score;
+        return best_score.add_depth(1);
     }
 }
 
 impl<E: Eval, V: Evaluate<E>> Search<E> for DefaultSearch<E, V> {
     fn search(&mut self, board: Board, alpha: E, beta: E, depth: i16) -> E {
-        let mut pv = Pv::new();
-        let result = self.search_line(board, alpha, beta, depth, &mut pv);
-        self.pv = pv;
+        let mut sp = AlphaBetaSearchParams::new(board, alpha, beta, depth);
+        let result = self.search_line(&mut sp);
+        self.pv = sp.get_pv();
         result
     }
 
@@ -192,14 +144,9 @@ fn find_move_qsearch(board: Board, m: ChessMove) {
         Arc::<AtomicBool>::new(AtomicBool::new(false)),
         DefaultEvaluate::default(),
     );
-    let mut pv = Pv::new();
-    searcher.qsearch(
-        board,
-        i32::min_value() + 20,
-        i32::max_value() - 20,
-        0,
-        &mut pv,
-    );
+    let mut search_params = AlphaBetaSearchParams::new(board, i32::min_value() + 20, i32::max_value() - 20, 0);
+    searcher.qsearch(&mut search_params);
+    let pv = search_params.get_pv();
 
     assert_eq!(pv[0], m);
 }

@@ -10,3 +10,4 @@ mod test_positions;
 pub mod time_manager;
 pub mod tt_entry;
 pub mod tt_score;
+pub mod search_window;

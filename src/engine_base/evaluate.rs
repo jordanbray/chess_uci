@@ -1,9 +1,10 @@
 use super::eval::Eval;
 use chess::{Board, Color, Piece};
 use std::default::Default;
+use super::search_window::SearchParams;
 
 pub trait Evaluate<E: Eval> {
-    fn evaluate(&mut self, board: Board, alpha: E, beta: E) -> E;
+    fn evaluate(&mut self, sp: &mut impl SearchParams<E>) -> E;
 }
 
 pub struct DefaultEvaluate {
@@ -15,15 +16,15 @@ pub struct DefaultEvaluate {
 }
 
 impl Evaluate<i32> for DefaultEvaluate {
-    fn evaluate(&mut self, board: Board, _alpha: i32, _beta: i32) -> i32 {
-        let white = board.color_combined(Color::White);
-        let black = board.color_combined(Color::Black);
+    fn evaluate(&mut self, sp: &mut impl SearchParams<i32>) -> i32 {
+        let white = sp.board().color_combined(Color::White);
+        let black = sp.board().color_combined(Color::Black);
 
-        let pawns = board.pieces(Piece::Pawn);
-        let knights = board.pieces(Piece::Knight);
-        let bishops = board.pieces(Piece::Bishop);
-        let rooks = board.pieces(Piece::Rook);
-        let queens = board.pieces(Piece::Queen);
+        let pawns = sp.board().pieces(Piece::Pawn);
+        let knights = sp.board().pieces(Piece::Knight);
+        let bishops = sp.board().pieces(Piece::Bishop);
+        let rooks = sp.board().pieces(Piece::Rook);
+        let queens = sp.board().pieces(Piece::Queen);
 
         let white_pawns = (white & pawns).popcnt() as i32;
         let black_pawns = (black & pawns).popcnt() as i32;
@@ -60,8 +61,11 @@ impl Default for DefaultEvaluate {
     }
 }
 
+#[cfg(test)]
+use super::search_window::AlphaBetaSearchParams;
+
 #[test]
 fn should_be_equal() {
     let mut evaluator = DefaultEvaluate::default();
-    assert_eq!(evaluator.evaluate(Board::default(), -100, 100), 0);
+    assert_eq!(evaluator.evaluate(&mut AlphaBetaSearchParams::new(Board::default(), -100, 100, 0)), 0);
 }

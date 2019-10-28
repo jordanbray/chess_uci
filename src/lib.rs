@@ -27,7 +27,7 @@ pub use engine::score::Score;
 pub use engine_base::engine_options::EngineOptions;
 pub use engine_base::eval::Eval;
 pub use engine_base::evaluate::{DefaultEvaluate, Evaluate};
-pub use engine_base::iterative_deepening::IterativeDeepening;
+pub use engine_base::iterative_deepening::{DefaultIterativeDeepening, IterativeDeepening};
 pub use engine_base::pv::Pv;
 pub use engine_base::search::{DefaultSearch, Search};
 pub use engine_base::search_info::SearchInfo;

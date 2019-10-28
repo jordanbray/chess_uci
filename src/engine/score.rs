@@ -1,7 +1,9 @@
 use error::Error;
 use std::fmt;
 use std::str::FromStr;
-
+use std::convert::From;
+use crate::engine_base::eval::Eval;
+use num_traits::NumCast;
 use parsers::*;
 
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
@@ -60,6 +62,16 @@ impl FromStr for Score {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(parse_score(s)?.1)
+    }
+}
+
+impl<E: Eval> From<E> for Score {
+    fn from(eval: E) -> Score {
+        if let Some(mate) = eval.depth_to_mate() {
+            Score::Mate(mate)
+        } else {
+            Score::Cp(NumCast::from::<E>(eval).expect("eval is in the i64 range."))
+        }
     }
 }
 
