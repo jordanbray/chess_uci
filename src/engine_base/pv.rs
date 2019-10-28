@@ -1,9 +1,9 @@
+use crate::engine::best_move::BestMove;
 use arrayvec::ArrayVec;
 use chess::ChessMove;
 use nodrop::NoDrop;
 use std::iter::IntoIterator;
 use std::ops::Index;
-use crate::engine::best_move::BestMove;
 
 const MAX_PLY: usize = 512;
 

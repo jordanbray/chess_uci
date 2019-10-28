@@ -1,7 +1,7 @@
 use super::eval::Eval;
+use super::search_window::SearchParams;
 use chess::{Board, Color, Piece};
 use std::default::Default;
-use super::search_window::SearchParams;
 
 pub trait Evaluate<E: Eval> {
     fn evaluate(&mut self, sp: &mut impl SearchParams<E>) -> E;
@@ -67,5 +67,13 @@ use super::search_window::AlphaBetaSearchParams;
 #[test]
 fn should_be_equal() {
     let mut evaluator = DefaultEvaluate::default();
-    assert_eq!(evaluator.evaluate(&mut AlphaBetaSearchParams::new(Board::default(), -100, 100, 0)), 0);
+    assert_eq!(
+        evaluator.evaluate(&mut AlphaBetaSearchParams::new(
+            Board::default(),
+            -100,
+            100,
+            0
+        )),
+        0
+    );
 }

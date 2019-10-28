@@ -2,17 +2,23 @@ use super::eval::Eval;
 use super::pv::Pv;
 use super::search::Search;
 use super::time_manager::TimeManager;
-use crate::timer::timer::Timer;
 use crate::engine::info::Info;
-use std::io::Write;
+use crate::timer::timer::Timer;
 use std::convert::TryInto;
+use std::io::Write;
 
 use chess::Board;
 
 use std::marker::PhantomData;
 
 pub trait IterativeDeepening {
-    fn id_search<W: Write>(&mut self, board: Board, max_depth: i16, moves_made: u16, writer: W) -> Pv;
+    fn id_search<W: Write>(
+        &mut self,
+        board: Board,
+        max_depth: i16,
+        moves_made: u16,
+        writer: W,
+    ) -> Pv;
 }
 
 pub struct DefaultIterativeDeepening<E: Eval, T: TimeManager<E>, S: Search<E>> {
@@ -33,12 +39,20 @@ impl<E: Eval, T: TimeManager<E>, S: Search<E>> DefaultIterativeDeepening<E, T, S
     }
 }
 
-impl<E: Eval, T: TimeManager<E>, S: Search<E>> IterativeDeepening for DefaultIterativeDeepening<E, T, S> {
-    fn id_search<W: Write>(&mut self, board: Board, max_depth: i16, moves_made: u16, mut writer: W) -> Pv {
+impl<E: Eval, T: TimeManager<E>, S: Search<E>> IterativeDeepening
+    for DefaultIterativeDeepening<E, T, S>
+{
+    fn id_search<W: Write>(
+        &mut self,
+        board: Board,
+        max_depth: i16,
+        moves_made: u16,
+        mut writer: W,
+    ) -> Pv {
         let alpha = E::min_eval();
         let beta = E::max_eval();
         let mut pv = Pv::new();
-    
+
         for depth in 1..max_depth {
             let eval = self.searcher.search(board, alpha, beta, depth);
             if eval != E::null() {
@@ -47,9 +61,10 @@ impl<E: Eval, T: TimeManager<E>, S: Search<E>> IterativeDeepening for DefaultIte
                 break;
             }
 
-            let info = Info::default().combine(&Info::depth(depth.try_into().unwrap()))
-                                      .combine(&Info::score(eval.into()))
-                                      .combine(&Info::pv(pv.clone().into_iter().collect()));
+            let info = Info::default()
+                .combine(&Info::depth(depth.try_into().unwrap()))
+                .combine(&Info::score(eval.into()))
+                .combine(&Info::pv(pv.clone().into_iter().collect()));
             write!(writer, "{}", info);
 
             if !self.time_manager.continue_id(eval, &self.timer, moves_made) {

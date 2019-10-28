@@ -1,10 +1,10 @@
-use error::Error;
-use std::fmt;
-use std::str::FromStr;
-use std::convert::From;
 use crate::engine_base::eval::Eval;
+use error::Error;
 use num_traits::NumCast;
 use parsers::*;
+use std::convert::From;
+use std::fmt;
+use std::str::FromStr;
 
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum Score {

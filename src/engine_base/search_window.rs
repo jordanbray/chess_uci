@@ -1,6 +1,6 @@
 use super::eval::Eval;
 use super::pv::Pv;
-use chess::{ChessMove, Board};
+use chess::{Board, ChessMove};
 
 pub struct AlphaBetaSearchParams<E: Eval> {
     board: Board,
@@ -102,9 +102,7 @@ impl<E: Eval> SearchParams<E> for NullWindowSearchParams<E> {
         self.score - E::one()
     }
 
-    fn set_alpha(&mut self, _alpha: E) {
-    
-    }
+    fn set_alpha(&mut self, _alpha: E) {}
 
     fn beta(&self) -> E {
         self.score
@@ -122,9 +120,7 @@ impl<E: Eval> SearchParams<E> for NullWindowSearchParams<E> {
         }
     }
 
-    fn update_pv(&mut self, _chess_move: ChessMove, _other: NullWindowSearchParams<E>) {
-
-    }
+    fn update_pv(&mut self, _chess_move: ChessMove, _other: NullWindowSearchParams<E>) {}
 
     fn lower_depth_into_null_window(&self, chess_move: ChessMove) -> NullWindowSearchParams<E> {
         self.lower_depth(chess_move)
@@ -138,9 +134,7 @@ impl<E: Eval> SearchParams<E> for NullWindowSearchParams<E> {
         self.depth
     }
 
-    fn clear_pv(&mut self) {
-
-    }
+    fn clear_pv(&mut self) {}
 }
 
 #[cfg(test)]
@@ -154,4 +148,3 @@ fn test_window() {
     assert_eq!(sp.alpha(), -50);
     assert_eq!(sp.beta(), 100);
 }
-

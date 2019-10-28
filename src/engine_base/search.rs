@@ -7,7 +7,7 @@ use chess::{Board, Color, MoveGen};
 use super::eval::Eval;
 use super::evaluate::Evaluate;
 use super::pv::Pv;
-use super::search_window::{SearchParams, AlphaBetaSearchParams};
+use super::search_window::{AlphaBetaSearchParams, SearchParams};
 
 //use super::tt_entry::TtEntry;
 
@@ -132,11 +132,11 @@ impl<E: Eval, V: Evaluate<E>> Search<E> for DefaultSearch<E, V> {
 }
 
 #[cfg(test)]
+use super::evaluate::DefaultEvaluate;
+#[cfg(test)]
 use super::test_positions::{easy_tactic, super_easy_tactic};
 #[cfg(test)]
 use chess::ChessMove;
-#[cfg(test)]
-use super::evaluate::DefaultEvaluate;
 
 #[cfg(test)]
 fn find_move_qsearch(board: Board, m: ChessMove) {
@@ -144,7 +144,8 @@ fn find_move_qsearch(board: Board, m: ChessMove) {
         Arc::<AtomicBool>::new(AtomicBool::new(false)),
         DefaultEvaluate::default(),
     );
-    let mut search_params = AlphaBetaSearchParams::new(board, i32::min_value() + 20, i32::max_value() - 20, 0);
+    let mut search_params =
+        AlphaBetaSearchParams::new(board, i32::min_value() + 20, i32::max_value() - 20, 0);
     searcher.qsearch(&mut search_params);
     let pv = search_params.get_pv();
 
