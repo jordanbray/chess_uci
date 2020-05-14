@@ -3,7 +3,8 @@ use nom::branch::alt;
 use nom::bytes::complete::take_while;
 use nom::bytes::streaming::tag;
 use nom::character::complete::digit1;
-use nom::combinator::{complete, map, opt, value};
+use nom::combinator::{complete, map, map_res, opt, recognize, value};
+use nom::multi::fold_many1;
 use nom::sequence::{pair, tuple};
 use nom::IResult;
 use nom::{FindToken, InputTakeAtPosition};
@@ -101,40 +102,29 @@ pub fn parse_fen(input: &str) -> IResult<&str, Board> {
     .map_err(|_| nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify)))
 }
 
-named!(
-    pub integer<&str, u64>,
-    map_res!(
-        digit1,
-        u64::from_str
-    )
-);
+pub fn integer(input: &str) -> IResult<&str, u64> {
+    map_res(digit1, u64::from_str)(input)
+}
 
-named!(
-    pub parse_i64<&str, i64>,
-    map_res!(
-        recognize!(
-            do_parse!(
-                opt!(tag!("-")) >>
-                digit1 >>
-                ()
-            )
-        ),
-        |s: &str| s.parse::<i64>()
-    )
-);
+pub fn parse_i64(input: &str) -> IResult<&str, i64> {
+    map_res(recognize(pair(opt(tag("-")), digit1)), |s: &str| {
+        s.parse::<i64>()
+    })(input)
+}
 
-named!(pub parse_movelist<&str, Vec<ChessMove> >, do_parse!(
-        moves: fold_many1!(
-            alt!(complete!(parse_move_space) | complete!(parse_move)),
+pub fn parse_movelist(input: &str) -> IResult<&str, Vec<ChessMove>> {
+    map(
+        fold_many1(
+            alt((complete(parse_move_space), complete(parse_move))),
             Vec::new(),
             |mut acc: Vec<ChessMove>, item: ChessMove| {
                 acc.push(item);
                 acc
-            }
-        ) >>
-        (moves.to_vec())
-    )
-);
+            },
+        ),
+        |moves| moves.to_vec(),
+    )(input)
+}
 
 #[test]
 fn test_parse_fen_success() {
