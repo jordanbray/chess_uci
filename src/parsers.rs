@@ -135,3 +135,19 @@ named!(pub parse_movelist<&str, Vec<ChessMove> >, do_parse!(
         (moves.to_vec())
     )
 );
+
+#[test]
+fn test_parse_fen_success() {
+    let parsed = parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let want = Board::default();
+
+    assert_eq!(parsed, Ok(("", want)));
+}
+
+#[test]
+fn test_parse_fen_failure() {
+    let res = parse_fen("not a valid fen");
+    let want = nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify));
+
+    assert_eq!(res, Err(want));
+}
