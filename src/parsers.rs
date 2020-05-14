@@ -1,10 +1,12 @@
 use chess::{Board, ChessMove, File, Piece, Rank, Square};
 use nom::branch::alt;
+use nom::bytes::complete::take_while;
 use nom::bytes::streaming::tag;
 use nom::character::complete::digit1;
 use nom::combinator::{complete, map, opt, value};
 use nom::sequence::{pair, tuple};
 use nom::IResult;
+use nom::{FindToken, InputTakeAtPosition};
 use std::str::FromStr;
 
 pub fn parse_rank(input: &str) -> IResult<&str, Rank> {
@@ -62,34 +64,42 @@ pub fn parse_move_space(input: &str) -> IResult<&str, ChessMove> {
     )(input)
 }
 
-named!(pub space<&str, &str>, eat_separator!(" \t\r\n"));
-named!(pub non_newline_space<&str, &str>, eat_separator!(" \t\r"));
+pub fn space(input: &str) -> IResult<&str, &str> {
+    input.split_at_position(|c| !(" \t\r\n").find_token(c))
+}
 
-named!(pub parse_fen<&str, Board>, do_parse!(
-        x: do_parse!(
-            board: take_while!(|y| "pPnNbBrRqQkK12345678/".contains(y)) >>
-            space >>
-            player: alt!(tag!("w") | tag!("b")) >>
-            space >>
-            castle: take_while!(|y| "-kKqQ".contains(y)) >>
-            space >>
-            ep: take_while!(|y| "abcdefgh12345678-".contains(y)) >>
-            space >>
-            m1: take_while!(|y| "0123456789".contains(y)) >>
-            space >>
-            m2: take_while!(|y| "0123456789".contains(y)) >>
-            (Board::from_str(&format!("{} {} {} {} {} {}",
-                         board,
-                         player,
-                         castle,
-                         ep,
-                         m1,
-                         m2
-                    )).map_err(|_| nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify))))
-        ) >>
-        (x?)
-    )
-);
+pub fn non_newline_space(input: &str) -> IResult<&str, &str> {
+    input.split_at_position(|c| !(" \t\r").find_token(c))
+}
+
+pub fn parse_fen(input: &str) -> IResult<&str, Board> {
+    map(
+        tuple((
+            take_while(|y| "pPnNbBrRqQkK12345678/".contains(y)),
+            space,
+            alt((tag("w"), tag("b"))),
+            space,
+            take_while(|y| "-kKqQ".contains(y)),
+            space,
+            take_while(|y| "abcdefgh12345678-".contains(y)),
+            space,
+            take_while(|y| "0123456789".contains(y)),
+            space,
+            take_while(|y| "0123456789".contains(y)),
+        )),
+        |(board, _, player, _, castle, _, ep, _, m1, _, m2)| {
+            (Board::from_str(&format!(
+                "{} {} {} {} {} {}",
+                board, player, castle, ep, m1, m2
+            ))
+            .unwrap()) // we parsed it therefor it must be a valid fen?
+                       // this is risky because Board has another fen parser that might disagree,
+                       // however I'm not familiar enough with nom to know how to do this
+                       // without massive boilerplate
+        },
+    )(input)
+    .map_err(|_| nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify)))
+}
 
 named!(
     pub integer<&str, u64>,
