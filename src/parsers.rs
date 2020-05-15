@@ -74,7 +74,7 @@ pub fn non_newline_space(input: &str) -> IResult<&str, &str> {
 }
 
 pub fn parse_fen(input: &str) -> IResult<&str, Board> {
-    map(
+    let parsed = map(
         tuple((
             take_while(|y| "pPnNbBrRqQkK12345678/".contains(y)),
             space,
@@ -89,17 +89,15 @@ pub fn parse_fen(input: &str) -> IResult<&str, Board> {
             take_while(|y| "0123456789".contains(y)),
         )),
         |(board, _, player, _, castle, _, ep, _, m1, _, m2)| {
-            (Board::from_str(&format!(
+            Board::from_str(&format!(
                 "{} {} {} {} {} {}",
                 board, player, castle, ep, m1, m2
             ))
-            .unwrap()) // we parsed it therefor it must be a valid fen?
-                       // this is risky because Board has another fen parser that might disagree,
-                       // however I'm not familiar enough with nom to know how to do this
-                       // without massive boilerplate
+            .map_err(|_| nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify)))
         },
-    )(input)
-    .map_err(|_| nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify)))
+    )(input)?;
+
+    Ok((parsed.0, parsed.1?))
 }
 
 pub fn integer(input: &str) -> IResult<&str, u64> {
@@ -136,8 +134,8 @@ fn test_parse_fen_success() {
 
 #[test]
 fn test_parse_fen_failure() {
-    let res = parse_fen("not a valid fen");
-    let want = nom::Err::Failure(("Invalid FEN", nom::error::ErrorKind::Verify));
+    let res = parse_fen("Invalid FEN");
+    let want = nom::Err::Error(("Invalid FEN", nom::error::ErrorKind::Tag));
 
     assert_eq!(res, Err(want));
 }

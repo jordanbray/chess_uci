@@ -2,6 +2,12 @@ use error::Error;
 use std::fmt;
 use std::str::FromStr;
 
+use nom::IResult;
+use nom::combinator::{map, complete, value};
+use nom::bytes::streaming::tag;
+use nom::branch::alt;
+use nom::sequence::tuple;
+
 use parsers::*;
 
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
@@ -11,17 +17,20 @@ pub enum Registration {
     Error,
 }
 
-named!(pub parse_registration<&str, Registration>, do_parse!(
-        tag!("registration") >>
-        space >>
-        val: alt!(
-                complete!(value!(Registration::Good, tag!("ok"))) |
-                complete!(value!(Registration::Checking, tag!("checking"))) |
-                complete!(value!(Registration::Error, tag!("error")))
-            ) >>
-        (val)
-    )
-);
+pub fn parse_registration(input: &str) -> IResult<&str, Registration> {
+    map(
+        tuple((
+            tag("registration"),
+            space,
+            alt((
+                complete(value(Registration::Good, tag("ok"))),
+                complete(value(Registration::Checking, tag("checking"))),
+                complete(value(Registration::Error, tag("error"))),
+            )),
+        )),
+        |(_, _, reg)| reg
+    )(input)
+}
 
 impl FromStr for Registration {
     type Err = Error;

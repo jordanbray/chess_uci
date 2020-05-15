@@ -8,6 +8,12 @@ use parsers::*;
 #[cfg(test)]
 use chess::{File, Rank, Square};
 
+use nom::IResult;
+use nom::combinator::{map, complete};
+use nom::sequence::tuple;
+use nom::branch::alt;
+use nom::bytes::streaming::tag;
+
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default)]
 pub struct BestMove {
     chess_move: ChessMove,
@@ -38,31 +44,38 @@ impl BestMove {
     }
 }
 
-named!(parse_best_move_noponder<&str, BestMove>, do_parse!(
-        tag!("bestmove") >>
-        space >>
-        m: parse_move >>
-        (BestMove::new(m))
-    )
-);
+fn parse_best_move_noponder(input: &str) -> IResult<&str, BestMove> {
+    map(
+        tuple((
+            tag("bestmove"),
+            space,
+            parse_move,
+        )),
+        |(_, _, m)| BestMove::new(m)
+    )(input)
+}
 
-named!(parse_best_move_ponder<&str, BestMove>, do_parse!(
-        tag!("bestmove") >>
-        space >>
-        m: parse_move >>
-        space >>
-        tag!("ponder") >>
-        space >>
-        p: parse_move >>
-        (BestMove::new_with_ponder(m, p))
-    )
-);
+fn parse_best_move_ponder(input: &str) -> IResult<&str, BestMove> {
+    map(
+        tuple((
+                tag("bestmove"),
+                space,
+                parse_move,
+                space,
+                tag("ponder"),
+                space,
+                parse_move
+            )),
+        |(_, _, m, _, _, _, p)| BestMove::new_with_ponder(m, p)
+    )(input)
+}
 
-named!(pub parse_best_move<&str, BestMove>, do_parse!(
-        val: alt!(complete!(parse_best_move_ponder) | complete!(parse_best_move_noponder)) >>
-        (val)
-    )
-);
+pub fn parse_best_move(input: &str) -> IResult<&str, BestMove> {
+    alt((
+        complete(parse_best_move_ponder),
+        complete(parse_best_move_noponder)
+    ))(input)
+}
 
 impl FromStr for BestMove {
     type Err = Error;

@@ -9,6 +9,11 @@ use engine::id::{parse_engine_id, Id};
 use engine::info::{parse_info, Info};
 use engine::registration::{parse_registration, Registration};
 
+use nom::IResult;
+use nom::combinator::{map, value, complete};
+use nom::bytes::streaming::tag;
+use nom::branch::alt;
+
 #[cfg(test)]
 use chess::{ChessMove, File, Rank, Square};
 #[cfg(test)]
@@ -28,66 +33,62 @@ pub enum EngineCommand {
     EngineOption(EngineOption),
 }
 
-named!(parse_engine_command_id<&str, EngineCommand>, do_parse!(
-        value: parse_engine_id >>
-        (EngineCommand::Id(value))
-    )
-);
+fn parse_engine_command_id(input: &str) -> IResult<&str, EngineCommand> {
+    map(parse_engine_id,
+        |value| EngineCommand::Id(value)
+    )(input)
+}
 
-named!(parse_engine_command_uciok<&str, EngineCommand>, do_parse!(
-        tag!("uciok") >>
-        (EngineCommand::UciOk)
-    )
-);
+fn parse_engine_command_uciok(input: &str) -> IResult<&str, EngineCommand> {
+    value(EngineCommand::UciOk, tag("uciok"))(input)
+}
 
-named!(parse_engine_command_readyok<&str, EngineCommand>, do_parse!(
-        tag!("readyok") >>
-        (EngineCommand::ReadyOk)
-    )
-);
+fn parse_engine_command_readyok(input: &str) -> IResult<&str, EngineCommand> {
+    value(EngineCommand::ReadyOk, tag("readyok"))(input)
+}
 
-named!(parse_engine_command_best_move<&str, EngineCommand>, do_parse!(
-        value: parse_best_move >>
-        (EngineCommand::BestMove(value))
-    )
-);
+fn parse_engine_command_best_move(input: &str) -> IResult<&str, EngineCommand> {
+    map(parse_best_move,
+        |m| EngineCommand::BestMove(m)
+    )(input)
+}
 
-named!(parse_engine_command_copy_protection<&str, EngineCommand>, do_parse!(
-        value: parse_copyprotection >>
-        (EngineCommand::CopyProtection(value))
-    )
-);
+fn parse_engine_command_copy_protection(input: &str) -> IResult<&str, EngineCommand> {
+    map(parse_copyprotection,
+        |c| EngineCommand::CopyProtection(c)
+    )(input)
+}
 
-named!(parse_engine_command_registration<&str, EngineCommand>, do_parse!(
-        value: parse_registration >>
-        (EngineCommand::Registration(value))
-    )
-);
+fn parse_engine_command_registration(input: &str) -> IResult<&str, EngineCommand> {
+    map(parse_registration,
+        |r| EngineCommand::Registration(r)
+    )(input)
+}
 
-named!(parse_engine_command_info<&str, EngineCommand>, do_parse!(
-        value: parse_info >>
-        (EngineCommand::Info(value))
-    )
-);
+fn parse_engine_command_info(input: &str) -> IResult<&str, EngineCommand> {
+    map(parse_info,
+        |i| EngineCommand::Info(i)
+    )(input)
+}
 
-named!(parse_engine_command_engine_option<&str, EngineCommand>, do_parse!(
-        value: parse_engine_option >>
-        (EngineCommand::EngineOption(value))
-    )
-);
+fn parse_engine_command_engine_option(input: &str) -> IResult<&str, EngineCommand> {
+    map(parse_engine_option,
+        |o| EngineCommand::EngineOption(o)
+    )(input)
+}
 
-named!(parse_engine_command<&str, EngineCommand>, do_parse!(
-        value: alt!(complete!(parse_engine_command_id) |
-                    complete!(parse_engine_command_uciok) |
-                    complete!(parse_engine_command_readyok) |
-                    complete!(parse_engine_command_best_move) |
-                    complete!(parse_engine_command_copy_protection) |
-                    complete!(parse_engine_command_registration) |
-                    complete!(parse_engine_command_info) |
-                    complete!(parse_engine_command_engine_option)) >>
-        (value)
-    )
-);
+fn parse_engine_command(input: &str) -> IResult<&str, EngineCommand> {
+    alt((
+        complete(parse_engine_command_id),
+        complete(parse_engine_command_uciok),
+        complete(parse_engine_command_readyok),
+        complete(parse_engine_command_best_move),
+        complete(parse_engine_command_copy_protection),
+        complete(parse_engine_command_registration),
+        complete(parse_engine_command_info),
+        complete(parse_engine_command_engine_option),
+    ))(input)
+}
 
 impl FromStr for EngineCommand {
     type Err = Error;

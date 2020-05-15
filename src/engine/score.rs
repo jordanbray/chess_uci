@@ -6,6 +6,12 @@ use std::convert::From;
 use std::fmt;
 use std::str::FromStr;
 
+use nom::IResult;
+use nom::combinator::{map, complete};
+use nom::bytes::streaming::tag;
+use nom::branch::alt;
+use nom::sequence::tuple;
+
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum Score {
     Cp(i64),
@@ -14,48 +20,65 @@ pub enum Score {
     Upper(i64),
 }
 
-named!(parse_score_cp<&str, Score>, do_parse!(
-        tag!("cp") >>
-        space >>
-        v: parse_i64 >>
-        (Score::Cp(v))
-    )
-);
+fn parse_score_cp(input: &str) -> IResult<&str, Score> {
+    map(
+        tuple((
+            tag("cp"),
+            space,
+            parse_i64,
+        )),
+        |(_, _, v)| Score::Cp(v)
+    )(input)
+}
 
-named!(parse_score_mate<&str, Score>, do_parse!(
-        tag!("mate") >>
-        space >>
-        v: parse_i64 >>
-        (Score::Mate(v))
-    )
-);
+fn parse_score_mate(input: &str) -> IResult<&str, Score> {
+    map(
+        tuple((
+            tag("mate"),
+            space,
+            parse_i64,
+        )),
+        |(_, _, v)| Score::Mate(v)
+    )(input)
+}
 
-named!(parse_score_lower<&str, Score>, do_parse!(
-        tag!("lowerbound") >>
-        space >>
-        v: parse_i64 >>
-        (Score::Lower(v))
-    )
-);
+fn parse_score_lower(input: &str) -> IResult<&str, Score> {
+    map(
+        tuple((
+            tag("lowerbound"),
+            space,
+            parse_i64
+        )),
+        |(_, _, v)| Score::Lower(v)
+    )(input)
+}
 
-named!(parse_score_upper<&str, Score>, do_parse!(
-        tag!("upperbound") >>
-        space >>
-        v: parse_i64 >>
-        (Score::Upper(v))
-    )
-);
+fn parse_score_upper(input: &str) -> IResult<&str, Score> {
+    map(
+        tuple((
+            tag("upperbound"),
+            space,
+            parse_i64,
+        )),
+        |(_, _, v)| Score::Upper(v)
+    )(input)
+}
 
-named!(pub parse_score<&str, Score>, do_parse!(
-        tag!("score") >>
-        space >>
-        v: alt!(complete!(parse_score_cp) |
-                complete!(parse_score_mate) |
-                complete!(parse_score_upper) |
-                complete!(parse_score_lower)) >>
-        (v)
-    )
-);
+pub fn parse_score(input: &str) -> IResult<&str, Score> {
+    map(
+        tuple((
+            tag("score"),
+            space,
+            alt((
+                complete(parse_score_cp),
+                complete(parse_score_mate),
+                complete(parse_score_upper),
+                complete(parse_score_lower)
+            )),
+        )),
+        |(_, _, score)| score
+    )(input)
+}
 
 impl FromStr for Score {
     type Err = Error;
