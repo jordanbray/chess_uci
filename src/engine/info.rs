@@ -9,6 +9,14 @@ use parsers::*;
 #[cfg(test)]
 use chess::{File, Rank, Square};
 
+use nom::IResult;
+use nom::combinator::{map, complete};
+use nom::bytes::streaming::tag;
+use nom::multi::fold_many1;
+use nom::branch::alt;
+use nom::sequence::tuple;
+
+
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default)]
 pub struct Info {
     depth: Option<u64>,
@@ -167,122 +175,161 @@ impl Info {
     }
 }
 
-named!(parse_info_pv<&str, Info>, do_parse!(
-        space >>
-        tag!("pv") >>
-        space >>
-        moves: parse_movelist >>
-        (Info::pv(moves))
-    )
-);
+fn parse_info_pv(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("pv"),
+            space,
+            parse_movelist
+        )),
+        |(_, _, _, moves)| Info::pv(moves)
+    )(input)
+}
 
-named!(parse_info_depth<&str, Info>, do_parse!(
-        space >>
-        tag!("depth") >>
-        space >>
-        depth: integer >>
-        (Info::depth(depth))
-    )
-);
+fn parse_info_depth(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("depth"),
+            space,
+            integer,
+        )),
+        |(_, _, _, depth)| Info::depth(depth)
+    )(input)
+}
 
-named!(parse_info_seldepth<&str, Info>, do_parse!(
-        space >>
-        tag!("seldepth") >>
-        space >>
-        seldepth: integer >>
-        (Info::seldepth(seldepth))
-    )
-);
+fn parse_info_seldepth(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("seldepth"),
+            space,
+            integer,
+        )),
+        |(_, _, _, seldepth)| Info::seldepth(seldepth)
+    )(input)
+}
 
-named!(parse_info_time<&str, Info>, do_parse!(
-        space >>
-        tag!("time") >>
-        space >>
-        time: integer >>
-        (Info::time(time))
-    )
-);
+fn parse_info_time(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("time"),
+            space,
+            integer
+        )),
+        |(_, _, _, time)| Info::time(time)
+    )(input)
+}
 
-named!(parse_info_nodes<&str, Info>, do_parse!(
-        space >>
-        tag!("nodes") >>
-        space >>
-        nodes: integer >>
-        (Info::nodes(nodes))
-    )
-);
+fn parse_info_nodes(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("nodes"),
+            space,
+            integer,
+        )),
+        |(_, _, _, nodes)| Info::nodes(nodes)
+    )(input)
+}
 
-named!(parse_info_multi_pv<&str, Info>, do_parse!(
-        space >>
-        tag!("multipv") >>
-        space >>
-        mpv: integer >>
-        (Info::multi_pv(mpv))
-    )
-);
+fn parse_info_multi_pv(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("multipv"),
+            space,
+            integer,
+        )),
+        |(_, _, _, mpv)| Info::multi_pv(mpv)
+    )(input)
+}
 
-named!(parse_info_score<&str, Info>, do_parse!(
-        space >>
-        score: parse_score >>
-        (Info::score(score))
-    )
-);
+fn parse_info_score(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            parse_score
+        )),
+        |(_, score)| Info::score(score)
+    )(input)
+}
 
-named!(parse_info_cur_move<&str, Info>, do_parse!(
-        space >>
-        tag!("currmove") >>
-        space >>
-        m: parse_move >>
-        (Info::cur_move(m))
-    )
-);
+fn parse_info_cur_move(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("currmove"),
+            space,
+            parse_move
+        )),
+        |(_, _, _, m)| Info::cur_move(m)
+    )(input)
+}
 
-named!(parse_info_cur_move_number<&str, Info>, do_parse!(
-        space >>
-        tag!("currmovenumber") >>
-        space >>
-        i: integer >>
-        (Info::cur_move_number(i))
-    )
-);
+fn parse_info_cur_move_number(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("currmovenumber"),
+            space,
+            integer
+        )),
+        |(_, _, _, i)| Info::cur_move_number(i)
+    )(input)
+}
 
-named!(parse_info_nps<&str, Info>, do_parse!(
-        space >>
-        tag!("nps") >>
-        space >>
-        nps: integer >>
-        (Info::nps(nps))
-    )
-);
+fn parse_info_nps(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("nps"),
+            space,
+            integer
+        )),
+        |(_, _, _, nps)| Info::nps(nps)
+    )(input)
+}
 
-named!(parse_info_tb_hits<&str, Info>, do_parse!(
-        space >>
-        tag!("tbhits") >>
-        space >>
-        tb_hits: integer >>
-        (Info::tb_hits(tb_hits))
-    )
-);
+fn parse_info_tb_hits(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            space,
+            tag("tbhits"),
+            space,
+            integer
+        )),
+        |(_, _, _, tb_hits)| Info::tb_hits(tb_hits)
+    )(input)
+}
 
-named!(pub parse_info<&str, Info>, do_parse!(
-        tag!("info") >>
-        info: fold_many1!(
-            alt!(complete!(parse_info_pv) |
-                 complete!(parse_info_depth) |
-                 complete!(parse_info_seldepth) |
-                 complete!(parse_info_time) |
-                 complete!(parse_info_nodes) |
-                 complete!(parse_info_multi_pv) |
-                 complete!(parse_info_score) |
-                 complete!(parse_info_cur_move) |
-                 complete!(parse_info_cur_move_number) |
-                 complete!(parse_info_nps) |
-                 complete!(parse_info_tb_hits)),
-            Info::default(),
-            |acc: Info, next: Info| acc.combine(&next)) >>
-        (info)
-    )
-);
+pub fn parse_info(input: &str) -> IResult<&str, Info> {
+    map(
+        tuple((
+            tag("info"),
+            fold_many1(
+                alt((
+                    complete(parse_info_pv),
+                    complete(parse_info_depth),
+                    complete(parse_info_seldepth),
+                    complete(parse_info_time),
+                    complete(parse_info_nodes),
+                    complete(parse_info_multi_pv),
+                    complete(parse_info_score),
+                    complete(parse_info_cur_move),
+                    complete(parse_info_cur_move_number),
+                    complete(parse_info_nps),
+                    complete(parse_info_tb_hits)
+                )),
+                Info::default(),
+                |acc: Info, next: Info| acc.combine(&next)
+            ),
+        )),
+        |(_, info)| info
+    )(input)
+}
 
 impl FromStr for Info {
     type Err = Error;

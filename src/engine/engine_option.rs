@@ -5,28 +5,36 @@ use std::str::FromStr;
 use engine::option_type::{parse_option_type, OptionType};
 use parsers::*;
 
+use nom::combinator::map;
+use nom::bytes::complete::{tag, take_until};
+use nom::sequence::tuple;
+use nom::IResult;
+
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub struct EngineOption {
     name: String,
     option_type: OptionType,
 }
 
-named!(pub parse_engine_option<&str, EngineOption>, do_parse!(
-        tag!("option") >>
-        space >>
-        tag!("name") >>
-        space >>
-        name: take_until!("type") >>
-        option_type: parse_option_type >>
-        (EngineOption { name: name.trim().to_string(), option_type: option_type })
-    )
-);
+pub fn parse_engine_option(input: &str) -> IResult<&str, EngineOption> {
+    map(
+        tuple((
+            tag("option"),
+            space,
+            tag("name"),
+            space,
+            take_until("type"),
+            parse_option_type,
+        )),
+        |(_, _, _, _, name, option_type)| EngineOption { name: name.trim().to_string(), option_type }
+    )(input)
+}
 
 impl EngineOption {
     pub fn new(name: String, option_type: OptionType) -> EngineOption {
         EngineOption {
-            name: name,
-            option_type: option_type,
+            name,
+            option_type,
         }
     }
 

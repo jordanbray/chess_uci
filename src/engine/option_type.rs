@@ -2,9 +2,15 @@ use error::Error;
 use std::fmt;
 use std::str::FromStr;
 
-use nom::character::complete::alphanumeric1;
-use nom::combinator::rest;
 use parsers::*;
+
+use nom::IResult;
+use nom::combinator::{map, complete, value, rest};
+use nom::bytes::streaming::tag;
+use nom::branch::alt;
+use nom::sequence::tuple;
+use nom::multi::fold_many1;
+use nom::character::complete::alphanumeric1;
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub enum OptionType {
@@ -15,107 +21,138 @@ pub enum OptionType {
     Str(String),
 }
 
-named!(parse_check<&str, OptionType>, do_parse!(
-        tag!("check") >>
-        space >>
-        tag!("default") >>
-        space >>
-        v: alt!(complete!(value!(true, tag!("true"))) |
-                complete!(value!(false, tag!("false")))) >>
-        (OptionType::Check(v))
-    )
-);
+fn parse_check(input: &str) -> IResult<&str, OptionType> {
+    map(
+        tuple((
+            tag("check"),
+            space,
+            tag("default"),
+            space,
+            alt((
+                complete(value(true, tag("true"))),
+                complete(value(false, tag("false"))),
+            )),
+        )),
+        |(_, _, _, _, v)| OptionType::Check(v)
+    )(input)
+}
 
-named!(parse_spin<&str, OptionType>, do_parse!(
-        tag!("spin") >>
-        space >>
-        tag!("default") >>
-        space >>
-        default: parse_i64 >>
-        space >>
-        tag!("min") >>
-        space >>
-        min: parse_i64 >>
-        space >>
-        tag!("max") >>
-        space >>
-        max: parse_i64 >>
-        (OptionType::Spin(default, min, max))
-    )
-);
+fn parse_spin(input: &str) -> IResult<&str, OptionType> {
+    map(
+        tuple((
+            tag("spin"),
+            space,
+            tag("default"),
+            space,
+            parse_i64,
+            space,
+            tag("min"),
+            space,
+            parse_i64,
+            space,
+            tag("max"),
+            space,
+            parse_i64
+        )),
+        |(_, _, _, _, def, _, _, _, min, _, _, _, max)| OptionType::Spin(def, min, max)
+    )(input)
+}
 
-named!(parse_combo_var<&str, &str>, do_parse!(
-        tag!("var") >>
-        space >>
-        x: alphanumeric1 >>
-        (x)
-    )
-);
+fn parse_combo_var(input: &str) -> IResult<&str, &str> {
+    map(
+        tuple((
+            tag("var"),
+            space,
+            alphanumeric1
+        )),
+        |(_, _, x)| x
+    )(input)
+}
 
-named!(parse_combo_var_space<&str, &str>, do_parse!(
-        v: parse_combo_var >>
-        space >>
-        (v)
-    )
-);
+fn parse_combo_var_space(input: &str) -> IResult<&str, &str> {
+    map(
+        tuple((
+            parse_combo_var,
+            space
+        )),
+        |(x, _)| x
+    )(input)
+}
 
-named!(parse_combo<&str, OptionType>, do_parse!(
-        tag!("combo") >>
-        space >>
-        tag!("default") >>
-        space >>
-        v: alphanumeric1 >>
-        space >>
-        options: fold_many1!(
-            alt!(complete!(parse_combo_var_space) | complete!(parse_combo_var)),
-            Vec::new(),
-            |mut acc: Vec<String>, item: &str| {
-                acc.push(item.to_string());
-                acc
-            }
-        ) >>
-        (OptionType::Combo(v.to_string(), options))
-    )
-);
+fn parse_combo(input: &str) -> IResult<&str, OptionType> {
+    map(
+        tuple((
+            tag("combo"),
+            space,
+            tag("default"),
+            space,
+            alphanumeric1,
+            space,
+            fold_many1(
+                alt((
+                    complete(parse_combo_var_space),
+                    complete(parse_combo_var)
+                )),
+                Vec::new(),
+                |mut acc: Vec<String>, item: &str| {
+                    acc.push(item.to_string());
+                    acc
+                }
+            ),
+        )),
+        |(_, _, _, _, def, _, options)| OptionType::Combo(def.to_string(), options)
+    )(input)
+}
 
-named!(parse_button<&str, OptionType>, do_parse!(
-        tag!("button") >>
-        (OptionType::Button)
-    )
-);
+fn parse_button(input: &str) -> IResult<&str, OptionType> {
+    value(OptionType::Button, tag("button"))(input)
+}
 
-named!(parse_nostring<&str, OptionType>, do_parse!(
-        (OptionType::Str("".to_string()))
-    )
-);
+fn parse_nostring(input: &str) -> IResult<&str, OptionType> {
+    Ok((input, OptionType::Str(String::new())))
+}
 
-named!(parse_somestring<&str, OptionType>, do_parse!(
-        space >>
-        v: rest >>
-        (OptionType::Str(v.trim().to_string()))
-    )
-);
+fn parse_somestring(input: &str) -> IResult<&str, OptionType> {
+    map(
+        tuple((
+            space,
+            rest
+        )),
+        |(_, v)| OptionType::Str(v.trim().to_string())
+    )(input)
+}
 
-named!(parse_string<&str, OptionType>, do_parse!(
-        tag!("string") >>
-        space >>
-        tag!("default") >>
-        v: alt!(complete!(parse_somestring) | complete!(parse_nostring)) >>
-        (v)
-    )
-);
+fn parse_string(input: &str) -> IResult<&str, OptionType> {
+    map(
+        tuple((
+            tag("string"),
+            space,
+            tag("default"),
+            alt((
+                complete(parse_somestring),
+                complete(parse_nostring),
+            )),
+        )),
+        |(_, _, _, res)| res
+    )(input)
+}
 
-named!(pub parse_option_type<&str, OptionType>, do_parse!(
-        tag!("type") >>
-        space >>
-        v: alt!(complete!(parse_check) |
-                complete!(parse_spin) |
-                complete!(parse_combo) |
-                complete!(parse_button) |
-                complete!(parse_string)) >>
-        (v)
-    )
-);
+pub fn parse_option_type(input: &str) -> IResult<&str, OptionType> {
+    map(
+        tuple((
+            tag("type"),
+            space,
+            alt((
+                complete(parse_check),
+                complete(parse_spin),
+                complete(parse_combo),
+                complete(parse_button),
+                complete(parse_string)
+            )),
+        )),
+        |(_, _, v)| v
+    )(input)
+}
 
 impl FromStr for OptionType {
     type Err = Error;

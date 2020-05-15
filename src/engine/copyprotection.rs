@@ -4,6 +4,12 @@ use std::str::FromStr;
 
 use parsers::*;
 
+use nom::branch::alt;
+use nom::combinator::value;
+use nom::sequence::tuple;
+use nom::bytes::streaming::tag;
+use nom::IResult;
+
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum CopyProtection {
     Good,
@@ -11,17 +17,18 @@ pub enum CopyProtection {
     Error,
 }
 
-named!(pub parse_copyprotection<&str, CopyProtection>, do_parse!(
-        tag!("copyprotection") >>
-        space >>
-        val: alt!(
-                complete!(value!(CopyProtection::Good, tag!("ok"))) |
-                complete!(value!(CopyProtection::Checking, tag!("checking"))) |
-                complete!(value!(CopyProtection::Error, tag!("error")))
-            ) >>
-        (val)
-    )
-);
+pub fn parse_copyprotection(input: &str) -> IResult<&str, CopyProtection> {
+    let result = tuple((
+        tag("copyprotection"),
+        space,
+        alt((
+            value(CopyProtection::Good, tag("ok")),
+            value(CopyProtection::Checking, tag("checking")),
+            value(CopyProtection::Error, tag("error"))
+        ))
+    ))(input)?;
+    Ok((result.0, (result.1).2))
+}
 
 impl FromStr for CopyProtection {
     type Err = Error;

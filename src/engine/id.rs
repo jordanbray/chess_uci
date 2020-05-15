@@ -5,6 +5,12 @@ use std::str::FromStr;
 
 use parsers::*;
 
+use nom::IResult;
+use nom::combinator::{map, complete};
+use nom::bytes::streaming::tag;
+use nom::branch::alt;
+use nom::sequence::tuple;
+
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default)]
 pub struct Id {
     pub name: Option<String>,
@@ -27,31 +33,39 @@ impl Id {
     }
 }
 
-named!(parse_engine_id_name<&str, Id>, do_parse!(
-        tag!("id") >>
-        space >>
-        tag!("name") >>
-        space >>
-        val: rest >>
-        (Id::name(val.trim()))
-    )
-);
+fn parse_engine_id_name(input: &str) -> IResult<&str, Id> {
+    map(
+        tuple((
+            tag("id"),
+            space,
+            tag("name"),
+            space,
+            rest,
+        )),
+        |(_, _, _, _, id)| Id::name(id.trim())
+    )(input)
 
-named!(parse_engine_id_author<&str, Id>, do_parse!(
-        tag!("id") >>
-        space >>
-        tag!("author") >>
-        space >>
-        val: rest >>
-        (Id::author(val.trim()))
-    )
-);
+}
 
-named!(pub parse_engine_id<&str, Id>, do_parse!(
-        val: alt!(complete!(parse_engine_id_name) | complete!(parse_engine_id_author)) >>
-        (val)
-    )
-);
+fn parse_engine_id_author(input: &str) -> IResult<&str, Id> {
+    map(
+        tuple((
+            tag("id"),
+            space,
+            tag("author"),
+            space,
+            rest
+        )),
+        |(_, _, _, _, author)| Id::author(author.trim())
+    )(input)
+}
+
+pub fn parse_engine_id(input: &str) -> IResult<&str, Id> {
+    alt((
+        complete(parse_engine_id_name),
+        complete(parse_engine_id_author)
+    ))(input)
+}
 
 impl FromStr for Id {
     type Err = Error;

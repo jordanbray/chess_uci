@@ -1,6 +1,13 @@
 use chess::ChessMove;
 use parsers::*;
 
+use nom::IResult;
+use nom::combinator::{map, complete, value};
+use nom::bytes::streaming::tag;
+use nom::multi::fold_many1;
+use nom::branch::alt;
+use nom::sequence::tuple;
+
 #[derive(Debug, PartialEq, PartialOrd, Clone, Default)]
 pub struct Go {
     search_moves: Vec<ChessMove>,
@@ -131,131 +138,171 @@ impl Go {
     }
 }
 
-named!(parse_go_wtime<&str, Go>, do_parse!(
-        space >>
-        tag!("wtime") >>
-        space >>
-        val: integer >>
-        (Go::wtime(val))
-    )
-);
+fn parse_go_wtime(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("wtime"),
+            space,
+            integer
+        )),
+        |(_, _, _, val)| Go::wtime(val)
+    )(input)
+}
 
-named!(parse_go_btime<&str, Go>, do_parse!(
-        space >>
-        tag!("btime") >>
-        space >>
-        val: integer >>
-        (Go::btime(val))
-    )
-);
+fn parse_go_btime(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("btime"),
+            space,
+            integer
+        )),
+        |(_, _, _, val)| Go::btime(val)
+    )(input)
+}
 
-named!(parse_go_winc<&str, Go>, do_parse!(
-        space >>
-        tag!("winc") >>
-        space >>
-        val: integer >>
-        (Go::winc(val))
-    )
-);
+fn parse_go_winc(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("btime"),
+            space,
+            integer
+        )),
+        |(_, _, _, winc)| Go::winc(winc)
+    )(input)
+}
 
-named!(parse_go_binc<&str, Go>, do_parse!(
-        space >>
-        tag!("binc") >>
-        space >>
-        val: integer >>
-        (Go::binc(val))
-    )
-);
+fn parse_go_binc(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("binc"),
+            space,
+            integer,
+        )),
+        |(_, _, _, binc)| Go::binc(binc)
+    )(input)
+}
 
-named!(parse_go_movestogo<&str, Go>, do_parse!(
-        space >>
-        tag!("movestogo") >>
-        space >>
-        val: integer >>
-        (Go::movestogo(val))
-    )
-);
+fn parse_go_movestogo(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("movestogo"),
+            space,
+            integer,
+        )),
+        |(_, _, _, movestogo)| Go::movestogo(movestogo)
+    )(input)
+}
 
-named!(parse_go_depth<&str, Go>, do_parse!(
-        space >>
-        tag!("depth") >>
-        space >>
-        val: integer >>
-        (Go::depth(val))
-    )
-);
+fn parse_go_depth(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("depth"),
+            space,
+            integer,
+        )),
+        |(_, _, _, depth)| Go::depth(depth)
+    )(input)
+}
 
-named!(parse_go_nodes<&str, Go>, do_parse!(
-        space >>
-        tag!("nodes") >>
-        space >>
-        val: integer >>
-        (Go::nodes(val))
-    )
-);
+fn parse_go_nodes(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("nodes"),
+            space,
+            integer,
+        )),
+        |(_, _, _, nodes)| Go::nodes(nodes)
+    )(input)
+}
 
-named!(parse_go_mate<&str, Go>, do_parse!(
-        space >>
-        tag!("mate") >>
-        space >>
-        val: integer >>
-        (Go::mate(val))
-    )
-);
+fn parse_go_mate(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("mate"),
+            space,
+            integer,
+        )),
+        |(_, _, _, mate)| Go::mate(mate)
+    )(input)
+}
 
-named!(parse_go_movetime<&str, Go>, do_parse!(
-        space >>
-        tag!("movetime") >>
-        space >>
-        val: integer >>
-        (Go::movetime(val))
-    )
-);
+fn parse_go_movetime(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("movetime"),
+            space,
+            integer,
+        )),
+        |(_, _, _, mate)| Go::movetime(mate)
+    )(input)
+}
 
-named!(parse_go_infinite<&str, Go>, do_parse!(
-        space >>
-        tag!("infinite") >>
-        (Go::infinite(true))
-    )
-);
+fn parse_go_infinite(input: &str) -> IResult<&str, Go> {
+    value(
+        Go::infinite(true),
+        tuple((
+            space,
+            tag("infinite")
+        ))
+    )(input)
+}
 
-named!(parse_go_ponder<&str, Go>, do_parse!(
-        space >>
-        tag!("ponder") >>
-        space >>
-        m: parse_move >>
-        (Go::ponder(m))
-    )
-);
+fn parse_go_ponder(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("ponder"),
+            space,
+            parse_move,
+        )),
+        |(_, _, _, m)| Go::ponder(m)
+    )(input)
+}
 
-named!(parse_go_searchmoves<&str, Go>, do_parse!(
-        space >>
-        tag!("searchmoves") >>
-        space >>
-        moves: parse_movelist >>
-        (Go::search_moves(moves.to_vec()))
-    )
-);
+fn parse_go_searchmoves(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            space,
+            tag("searchmoves"),
+            space,
+            parse_movelist
+        )),
+        |(_, _, _, moves)| Go::search_moves(moves.to_vec())
+    )(input)
+}
 
-named!(pub parse_go<&str, Go>, do_parse!(
-        tag!("go") >>
-        go: fold_many1!(
-            alt!(
-                complete!(parse_go_wtime) |
-                complete!(parse_go_btime) |
-                complete!(parse_go_winc) |
-                complete!(parse_go_binc) |
-                complete!(parse_go_movestogo) |
-                complete!(parse_go_depth) |
-                complete!(parse_go_nodes) |
-                complete!(parse_go_mate) |
-                complete!(parse_go_movetime) |
-                complete!(parse_go_infinite) |
-                complete!(parse_go_ponder) |
-                complete!(parse_go_searchmoves)
+pub fn parse_go(input: &str) -> IResult<&str, Go> {
+    map(
+        tuple((
+            tag("go"),
+            fold_many1(
+                alt((
+                    complete(parse_go_wtime),
+                    complete(parse_go_btime),
+                    complete(parse_go_winc),
+                    complete(parse_go_binc),
+                    complete(parse_go_movestogo),
+                    complete(parse_go_depth),
+                    complete(parse_go_nodes),
+                    complete(parse_go_mate),
+                    complete(parse_go_movetime),
+                    complete(parse_go_infinite),
+                    complete(parse_go_ponder),
+                    complete(parse_go_searchmoves),
+                )),
+                Go::default(),
+                |acc: Go, next: Go| acc.combine(&next)
             ),
-            Go::default(),
-            |acc: Go, item: Go| acc.combine(&item)) >>
-        (go)
-    )
-);
+        )),
+        |(_, go)| go
+    )(input)
+}

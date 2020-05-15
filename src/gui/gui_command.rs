@@ -10,6 +10,13 @@ use chess::{File, Piece, Rank, Square};
 use gui::go::{parse_go, Go};
 use parsers::*;
 
+use nom::IResult;
+use nom::combinator::{map, complete, value};
+use nom::bytes::streaming::tag;
+use nom::bytes::complete::take_until;
+use nom::branch::alt;
+use nom::sequence::tuple;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum GuiCommand {
     Uci,
@@ -25,140 +32,160 @@ pub enum GuiCommand {
     Quit,
 }
 
-named!(parse_uci<&str, GuiCommand>, do_parse!(
-        tag!("uci") >>
-        (GuiCommand::Uci)
-    )
-);
+fn parse_uci(input: &str) -> IResult<&str, GuiCommand> {
+    value(GuiCommand::Uci, tag("uci"))(input)
+}
 
-named!(parse_debug<&str, GuiCommand>, do_parse!(
-        tag!("debug") >>
-        space >>
-        a: alt!(value!(true, tag!("on")) | value!(false, tag!("off"))) >>
-        (GuiCommand::Debug(a))
-    )
-);
+fn parse_debug(input: &str) -> IResult<&str, GuiCommand> {
+    map(
+        tuple((
+            tag("debug"),
+            space,
+            alt((
+                value(true, tag("on")),
+                value(false, tag("off"))
+            )),
+        )),
+        |(_, _, debug)| GuiCommand::Debug(debug)
+    )(input)
+}
 
-named!(parse_isready<&str, GuiCommand>, do_parse!(
-        tag!("isready") >>
-        (GuiCommand::IsReady)
-    )
-);
+fn parse_isready(input: &str) -> IResult<&str, GuiCommand> {
+    value(GuiCommand::IsReady, tag("isready"))(input)
+}
 
-named!(parse_setoption_value<&str, GuiCommand>, do_parse!(
-        tag!("setoption") >>
-        space >>
-        tag!("name") >>
-        space >>
-        a: take_until!("value") >>
-        tag!("value") >>
-        b: rest >>
-        (GuiCommand::SetOption(a.trim().to_string(), Some(b.trim().to_string())))
-    )
-);
+fn parse_setoption_value(input: &str) -> IResult<&str, GuiCommand> {
+    map(
+        tuple((
+            tag("setoption"),
+            space,
+            tag("name"),
+            space,
+            take_until("value"),
+            tag("value"),
+            rest
+        )),
+        |(_, _, _, _, name, _, value)| GuiCommand::SetOption(name.trim().to_string(), Some(value.trim().to_string()))
+    )(input)
+}
 
-named!(parse_setoption_novalue<&str, GuiCommand>, do_parse!(
-        tag!("setoption") >>
-        space >>
-        tag!("name") >>
-        space >>
-        a: rest >>
-        (GuiCommand::SetOption(a.trim().to_string(), None))
-    )
-);
+fn parse_setoption_novalue(input: &str) -> IResult<&str, GuiCommand> {
+    map(
+        tuple((
+            tag("setoption"),
+            space,
+            tag("name"),
+            space,
+            rest
+        )),
+        |(_, _, _, _, name)| GuiCommand::SetOption(name.trim().to_string(), None)
+    )(input)
+}
 
-named!(parse_register<&str, GuiCommand>, do_parse!(
-        tag!("register") >>
-        space >>
-        token: rest >>
-        (GuiCommand::Register(token.to_string()))
-    )
-);
+fn parse_register(input: &str) -> IResult<&str, GuiCommand> {
+    map(
+        tuple((
+            tag("register"),
+            space,
+            rest,
+        )),
+        |(_, _, token)| GuiCommand::Register(token.to_string())
+    )(input)
+}
 
-named!(parse_ucinewgame<&str, GuiCommand>, do_parse!(
-        tag!("ucinewgame") >>
-        (GuiCommand::UciNewGame)
-    )
-);
+fn parse_ucinewgame(input: &str) -> IResult<&str, GuiCommand> {
+    value(GuiCommand::UciNewGame, tag("ucinewgame"))(input)
+}
 
-named!(parse_stop<&str, GuiCommand>, do_parse!(
-        tag!("stop") >>
-        (GuiCommand::Stop)
-    )
-);
+fn parse_stop(input: &str) -> IResult<&str, GuiCommand> {
+    value(GuiCommand::Stop, tag("stop"))(input)
+}
 
-named!(parse_ponderhit<&str, GuiCommand>, do_parse!(
-        tag!("ponderhit") >>
-        (GuiCommand::PonderHit)
-    )
-);
+fn parse_ponderhit(input: &str) -> IResult<&str, GuiCommand> {
+    value(GuiCommand::PonderHit, tag("ponderhit"))(input)
+}
 
-named!(parse_quit<&str, GuiCommand>, do_parse!(
-        tag!("quit") >>
-        (GuiCommand::Quit)
-    )
-);
+fn parse_quit(input: &str) -> IResult<&str, GuiCommand> {
+    value(GuiCommand::Quit, tag("quit"))(input)
+}
 
-named!(parse_gui_go<&str, GuiCommand>, do_parse!(
-        go: parse_go >>
-        (GuiCommand::Go(go))
-    )
-);
+fn parse_gui_go(input: &str) -> IResult<&str, GuiCommand> {
+    map(parse_go,
+        |go| GuiCommand::Go(go)
+    )(input)
+}
 
-named!(parse_position_fen<&str, Board>, do_parse!(
-        tag!("fen") >>
-        space >>
-        board: parse_fen >>
-        (board)
-    )
-);
+fn parse_position_fen(input: &str) -> IResult<&str, Board> {
+    map(
+        tuple((
+            tag("fen"),
+            space,
+            parse_fen
+        )),
+        |(_, _, board)| board
+    )(input)
+}
 
-named!(parse_position_startpos<&str, Board>, do_parse!(
-        tag!("startpos") >>
-        (Board::default())
-    )
-);
+fn parse_position_startpos(input: &str) -> IResult<&str, Board> {
+    value(Board::default(), tag("startpos"))(input)
+}
 
-named!(parse_position_moves<&str, Vec<ChessMove>>, do_parse!(
-        space >>
-        tag!("moves") >>
-        space >>
-        moves: parse_movelist >>
-        (moves.to_vec())
-    )
-);
+fn parse_position_moves(input: &str) -> IResult<&str, Vec<ChessMove>> {
+    map(
+        tuple((
+            space,
+            tag("moves"),
+            space,
+            parse_movelist,
+        )),
+        |(_, _, _, moves)| moves
+    )(input)
+}
 
-named!(parse_position_moves_empty<&str, Vec<ChessMove>>, do_parse!(
-        non_newline_space >>
-        tag!("\n") >>
-        (Vec::new())
-    )
-);
+fn parse_position_moves_empty(input: &str) -> IResult<&str, Vec<ChessMove>> {
+    value(
+        Vec::new(),
+        tuple((
+            non_newline_space,
+            tag("\n"),
+        ))
+    )(input)
+}
 
-named!(parse_position<&str, GuiCommand>, do_parse!(
-        tag!("position") >>
-        space >>
-        board: alt!(complete!(parse_position_fen) | complete!(parse_position_startpos)) >>
-        moves: alt!(complete!(parse_position_moves) | complete!(parse_position_moves_empty)) >>
-        (GuiCommand::Position(board, moves))
-    )
-);
+fn parse_position(input: &str) -> IResult<&str, GuiCommand> {
+    map(
+        tuple((
+            tag("position"),
+            space,
+            alt((
+                complete(parse_position_fen),
+                complete(parse_position_startpos),
+            )),
+            alt((
+                complete(parse_position_moves),
+                complete(parse_position_moves_empty),
+            ))
+        )),
+        |(_, _, board, moves)| GuiCommand::Position(board, moves)
+    )(input)
+}
 
-named!(parse_all<&str, GuiCommand>, alt!(
-        complete!(parse_ucinewgame) |
-        complete!(parse_uci) |
-        complete!(parse_debug) |
-        complete!(parse_isready) |
-        complete!(parse_setoption_value) |
-        complete!(parse_setoption_novalue) |
-        complete!(parse_register) |
-        complete!(parse_stop) |
-        complete!(parse_ponderhit) |
-        complete!(parse_quit) |
-        complete!(parse_gui_go) |
-        complete!(parse_position)
-    )
-);
+fn parse_all(input: &str) -> IResult<&str, GuiCommand> {
+    alt((
+        complete(parse_ucinewgame),
+        complete(parse_uci),
+        complete(parse_debug),
+        complete(parse_quit),
+        complete(parse_isready),
+        complete(parse_setoption_value),
+        complete(parse_setoption_novalue),
+        complete(parse_register),
+        complete(parse_stop),
+        complete(parse_ponderhit),
+        complete(parse_gui_go),
+        complete(parse_position)
+    ))(input)
+}
 
 impl FromStr for GuiCommand {
     type Err = Error;
